@@ -1,0 +1,28 @@
+{
+  "_doc": "site-orch per-site config. Lives at the site repo root; register its path with ~/git/site-orch/register.sh add. Board ids are written by new-project.sh; edit by hand only when moving boards.",
+  "slug": "j0ntz-homepage",
+  "github": { "owner": "j0ntz", "repo": "j0ntz-homepage", "branchPrefix": "jon/task-" },
+  "repoPath": "~/git/j0ntz-homepage",
+  "worktreesRoot": "~/git/.j0ntz-homepage-worktrees",
+  "buildCommand": "npm run build",
+  "maxConcurrent": 1,
+  "board": {
+    "owner": "j0ntz",
+    "projectNumber": 0,
+    "projectId": "",
+    "statusFieldId": "",
+    "statusOptions": { "Backlog": "", "Pending": "", "Running": "", "Verifying": "", "Verified": "", "Landing": "", "Done": "" }
+  },
+  "verify": { "_doc": "resolver = resolvers/<name>.sh in site-orch (vercel), or resolverCommand = a site script printing one live preview URL for <pr> <sha>.", "resolver": "vercel" },
+  "land": { "mergeMethod": "squash" },
+  "agent": {
+    "modelFieldId": "",
+    "modelOptions": { "Fable 5": "", "Opus 4.8": "", "Opus 4.7": "", "Sonnet 5": "", "Sonnet 4.6": "" },
+    "models": { "Fable 5": "claude-fable-5", "Opus 4.8": "claude-opus-4-8", "Opus 4.7": "claude-opus-4-7", "Sonnet 5": "claude-sonnet-5", "Sonnet 4.6": "claude-sonnet-4-6" },
+    "defaultModel": "",
+    "effortFieldId": "",
+    "effortOptions": { "low": "", "medium": "", "high": "", "xhigh": "", "max": "" },
+    "defaultEffort": "",
+    "remoteControlStages": ["work"]
+  }
+}
