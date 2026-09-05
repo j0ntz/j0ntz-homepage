@@ -42,13 +42,13 @@
       "Sonnet 4.6": "16a2b61d"
     },
     "models": {
-      "Fable 5": "claude-fable-5",
+      "Fable 5": "claude-fable-5-1",
       "Opus 4.8": "claude-opus-4-8",
       "Opus 4.7": "claude-opus-4-7",
       "Sonnet 5": "claude-sonnet-5",
       "Sonnet 4.6": "claude-sonnet-4-6"
     },
-    "defaultModel": "",
+    "defaultModel": "claude-fable-5-1",
     "effortFieldId": "PVTSSF_lAHOD6Er384Bif_6zhhX21Y",
     "effortOptions": {
       "low": "c58b6768",
