@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/*
+ * Token source for docs/design-system.md. Every color, face, size, and
+ * spacing value the site uses is declared here; components reference the
+ * custom properties (or the Tailwind utilities registered from them below)
+ * and never restate a literal. scripts/design-check.mjs enforces that.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* Color: three hues and nothing else. */
+  --ground: #06121f;
+  --surface: #0b1a2b;
+  --foreground: #e8f3f8;
+  --foreground-muted: #8fa3b3;
+  --border: #16283a;
+  --accent: #3dd6f5;
+  --accent-deep: #0e8fa8;
+  --glow: hsl(190 90% 60% / 0.55);
+
+  /* Type scale: 16px base, ratio 1.25. --step-6 is the name only. */
+  --step-0: 1rem; /* 16 */
+  --step-1: 1.25rem; /* 20 */
+  --step-2: 1.5625rem; /* 25 */
+  --step-3: 1.9375rem; /* 31 */
+  --step-4: 2.4375rem; /* 39 */
+  --step-5: 3.0625rem; /* 49 */
+  --step-6: 3.8125rem; /* 61 */
+
+  /* Space: 8px base unit, all vertical spacing a multiple of 24px. */
+  --space-base: 8px;
+  --rhythm: 24px;
 }
 
+/*
+ * Tailwind theme. The default palette and serif stack are wiped so no
+ * utility can reach a color the contract did not decide; the site's tokens
+ * are registered in their place. The font families are loaded by
+ * next/font/google in app/layout.tsx, which sets the --font-bricolage,
+ * --font-instrument, and --font-jetbrains variables on <html>; the stacks
+ * below carry the real fallbacks behind them.
+ */
 @theme inline {
-  --color-background: var(--background);
+  --color-*: initial;
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-glow: var(--glow);
+
+  --font-serif: initial;
+  --font-display:
+    var(--font-bricolage), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body:
+    var(--font-instrument), system-ui, -apple-system, "Segoe UI",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: var(--font-body);
+  --font-mono:
+    var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --text-step-0: var(--step-0);
+  --text-step-1: var(--step-1);
+  --text-step-2: var(--step-2);
+  --text-step-3: var(--step-3);
+  --text-step-4: var(--step-4);
+  --text-step-5: var(--step-5);
+  --text-step-6: var(--step-6);
+
+  --spacing: var(--space-base);
+  --spacing-rhythm: var(--rhythm);
+
+  /* Display letter-spacing and body line-height from the contract. Declared
+     here (not in :root above) so the utility name and the property share one
+     definition; Tailwind emits them on :root like the rest. */
+  --tracking-display: -0.02em;
+  --leading-body: 1.55;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--ground);
+  color: var(--foreground);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
