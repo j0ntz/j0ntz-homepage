@@ -1,0 +1,22 @@
+# Words and phrases that fail the copy lint (case-insensitive, whole word). One per line.
+passionate
+innovative
+cutting-edge
+seamless
+seamlessly
+leverage
+empower
+journey
+crafting
+best-in-class
+world-class
+transform your workflow
+all-in-one
+scale without limits
+build the future
+unlock
+elevate
+robust
+delve
+game-changer
+next-level
