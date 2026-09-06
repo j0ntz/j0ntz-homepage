@@ -21,7 +21,7 @@ Parse `<n>`. `pr=$(gh pr list --repo $ORCH_REPO --head ${ORCH_BRANCH_PREFIX}<n> 
 </step>
 
 <step id="2" name="Preview-test">
-`bash $ORCH_DIR/verify-preview.sh <pr> "<expected-substring>"` (a string that proves the change rendered; includes the mobile capture). A mobile site (`verify.kind` = mobile in orch.config.json) has no preview URL: the same command runs the Android pipeline and prints `FINGERPRINT=`, `APK=`, `MAESTRO=` and a `SCREENSHOT=` per flow under the same `RESULT=` contract. `RESULT=fail` because the CODE is wrong is a change request. A transient deploy hiccup: retry once or twice. Note the `SCREENSHOT=` paths.
+`bash $ORCH_DIR/verify-preview.sh <pr> "<expected-substring>"` (a string that proves the change rendered; includes the mobile capture). A mobile site (`verify.kind` = mobile in orch.config.json) has no preview URL: the same command runs the Android pipeline and prints `FINGERPRINT=`, `APK=`, `MAESTRO=` and a `SCREENSHOT=` per flow under the same `RESULT=` contract. When a `SCREENSHOT_URL=` line accompanies a screenshot, EMBED THAT URL in every issue comment and PR review you post: the repo may be private, and GitHub renders images in PR and issue bodies only from anonymously fetchable URLs (raw.githubusercontent.com links to a private repo show as broken). Committed screenshots under `docs/screenshots/` stay the record for the run report file, which renders them when viewed in the repo. `RESULT=fail` because the CODE is wrong is a change request. A transient deploy hiccup: retry once or twice. Note the `SCREENSHOT=` paths.
 </step>
 
 <step id="3" name="Cold review">
