@@ -9,6 +9,7 @@ description: Independently verify ONE Verifying code task (preview-test on its l
 <rule id="site-env">Site values come from the `ORCH_*` env (`$ORCH_REPO`, `$ORCH_BRANCH_PREFIX`, `$ORCH_DIR`). If `$ORCH_REPO` is empty, run `eval "$(bash ~/git/site-orch/env.sh)"` from the repo root first.</rule>
 <rule id="hands-off">ONE turn, unattended. Before flagging blocked run `/validate-block <issue-url> "<reason>"` and obey it (true: add the `blocked` label, do NOT change the state, post the blocker, stop).</rule>
 <rule id="check-not-fix">You verify and report; you do NOT edit code. File each problem as a change request and route the task to Pending. NEVER route to Running: no handler spawns for Running, so the task strands until the watchdog wrongly flags it blocked.</rule>
+<rule id="mobile-meaning">At 390 wide, before any interaction, list what the first screen conveys (names, roles, links, what the centrepiece is). If it conveys less than the desktop first screen, or its meaning depends on hover, that is a change request. A page that only makes sense with a mouse is a mobile defect by definition; passing the overflow check does not clear this rule.</rule>
 <rule id="binary-verdict">A finding is either a CHANGE REQUEST (worth a code change before land) or you do not raise it. No nit tier.</rule>
 <rule id="self-review-limit">Same-account PR, so GitHub forbids a formal APPROVE/REQUEST_CHANGES (422); submit the review with `event=COMMENT`. Routing is driven by whether you filed change-request threads.</rule>
 <rule id="feedback-comments">ANY issue comment not starting with `<!--` is human feedback; it is consumed only when it carries the orch's +1 reaction. An unconsumed one the work did not act on is a change request. When directives conflict, the newest wins.</rule>
@@ -24,7 +25,7 @@ Parse `<n>`. `pr=$(gh pr list --repo $ORCH_REPO --head ${ORCH_BRANCH_PREFIX}<n> 
 </step>
 
 <step id="3" name="Cold review">
-Run `/design-check` on the files the PR touches first; every finding it reports (mechanical or judgment) is a change request. Then review the diff for correctness and logic, security, the repo's TypeScript standards, its design-system rules, and spec adherence (does it do what issue #<n> asked?). Each finding worth a code change is a CHANGE REQUEST anchored to file:line; do not invent findings.
+Review the diff for correctness and logic, security, the repo's TypeScript standards, its design-system rules, and spec adherence (does it do what issue #<n> asked?). Each finding worth a code change is a CHANGE REQUEST anchored to file:line; do not invent findings.
 </step>
 
 <step id="4" name="Post and route (binary)">
