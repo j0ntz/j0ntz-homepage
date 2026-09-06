@@ -55,10 +55,6 @@ export const dimmedOpacity = 0.4;
 /** Edge opacity at rest, as a fraction of --accent. */
 export const edgeOpacity = 0.2;
 
-/** Shift of the whole graph to the right of centre on desktop, as a fraction
- * of the viewport width, so its visual mass sits beside the text. */
-export const desktopShiftFraction = 0.16;
-
 /** Vertical fov, in degrees, that makes a WebGL viewport of this aspect
  * show the same region as the SVG snapshot with xMidYMid meet. */
 export function fovForAspect(aspect: number): number {

@@ -25,6 +25,7 @@ const Home: React.FC = () => {
           <RepoGraph data={graph} copy={site.graph} maxCommits={maxCommits}>
             <GraphSnapshot
               className="hidden h-full w-full md:block"
+              id="desktop"
               nodes={desktopNodes}
               edges={edgesAmong(graph, desktopNodes)}
               layout={graph.layout}
@@ -33,6 +34,7 @@ const Home: React.FC = () => {
             />
             <GraphSnapshot
               className="h-full w-full md:hidden"
+              id="mobile"
               nodes={mobileNodes}
               edges={edgesAmong(graph, mobileNodes)}
               layout={graph.layout}

@@ -22,6 +22,10 @@ interface Props {
   /** Commits ceiling for sizing, shared with the WebGL scene so both
    * variants size a node identically. */
   maxCommits: number;
+  /** Distinguishes the instances one page renders (desktop and mobile), so
+   * each SVG owns its gradient and a fill never resolves into a hidden
+   * sibling. */
+  id: string;
   ariaLabel: string;
   className?: string;
 }
@@ -31,6 +35,7 @@ export const GraphSnapshot: React.FC<Props> = ({
   edges,
   layout,
   maxCommits,
+  id,
   ariaLabel,
   className,
 }) => {
@@ -49,7 +54,7 @@ export const GraphSnapshot: React.FC<Props> = ({
     .map((point, index) => ({ index, depth: point.depth }))
     .sort((a, b) => b.depth - a.depth)
     .map((entry) => entry.index);
-  const gradientId = `graph-glow-${nodes.length}`;
+  const gradientId = `graph-glow-${id}`;
 
   return (
     <svg
