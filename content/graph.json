@@ -1,0 +1,684 @@
+{
+  "generatedAt": "2026-09-06T01:31:09.880Z",
+  "since": "2024-09-06T01:31:09.880Z",
+  "nodes": [
+    {
+      "id": "project:edge-wallet",
+      "kind": "project",
+      "label": "Edge wallet",
+      "url": "https://github.com/EdgeApp/edge-react-gui",
+      "owner": "project",
+      "language": "TypeScript",
+      "commits": 366,
+      "stars": 691,
+      "firstActivity": "2026-02-18T20:01:03Z",
+      "lastActivity": "2026-09-04T22:53:57Z",
+      "topics": [],
+      "description": "The Edge self-custody wallet: React Native app, core, currency and exchange plugins, and the servers behind them."
+    },
+    {
+      "id": "project:agent-orchestration",
+      "kind": "project",
+      "label": "Agent orchestration",
+      "url": "https://github.com/EdgeApp/edge-dev-agents",
+      "owner": "project",
+      "language": "Shell",
+      "commits": 311,
+      "stars": 1,
+      "firstActivity": "2025-07-07T14:51:20Z",
+      "lastActivity": "2026-09-06T00:48:47Z",
+      "topics": [],
+      "description": "Asana tasks to pull requests without a human in the loop: a watcher spawns one Claude Code session per task, hooks enforce the workflow, a watchdog tends the sessions."
+    },
+    {
+      "id": "project:agent-evals",
+      "kind": "project",
+      "label": "Agent evals",
+      "url": "https://github.com/EdgeApp/edge-dev-agents#evals",
+      "owner": "project",
+      "language": "Shell",
+      "commits": 270,
+      "stars": 1,
+      "firstActivity": "2026-03-24T23:05:35Z",
+      "lastActivity": "2026-09-05T00:18:17Z",
+      "topics": [],
+      "description": "Post-hoc grading of finished agent runs against explicit rubrics, every finding carrying a citation an auditor can open."
+    },
+    {
+      "id": "edgeapp/edge-dev-agents",
+      "kind": "repo",
+      "label": "edge-dev-agents",
+      "url": "https://github.com/EdgeApp/edge-dev-agents",
+      "owner": "EdgeApp",
+      "language": "Shell",
+      "commits": 270,
+      "stars": 1,
+      "firstActivity": "2026-03-24T23:05:35Z",
+      "lastActivity": "2026-09-05T00:18:17Z",
+      "topics": [],
+      "description": "Agentic development - skills, rules, etc."
+    },
+    {
+      "id": "edgeapp/edge-react-gui",
+      "kind": "repo",
+      "label": "edge-react-gui",
+      "url": "https://github.com/EdgeApp/edge-react-gui",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 216,
+      "stars": 518,
+      "firstActivity": "2026-02-18T20:01:03Z",
+      "lastActivity": "2026-09-04T22:53:57Z",
+      "topics": [
+        "bitcoin",
+        "bitcoin-cash",
+        "dash",
+        "ethereum",
+        "gui",
+        "litecoin",
+        "react-native",
+        "wallet"
+      ],
+      "description": "Edge React Native GUI for iOS and Android"
+    },
+    {
+      "id": "j0ntz/polymarket-copy-trading-bot",
+      "kind": "repo",
+      "label": "Polymarket-Copy-Trading-Bot",
+      "url": "https://github.com/j0ntz/Polymarket-Copy-Trading-Bot",
+      "owner": "j0ntz",
+      "language": "TypeScript",
+      "commits": 99,
+      "stars": 1,
+      "firstActivity": "2024-06-10T20:49:17Z",
+      "lastActivity": "2026-03-02T19:05:18Z",
+      "topics": [],
+      "description": "An Open-Source Polymarket Copy Trading Bot"
+    },
+    {
+      "id": "j0ntz/tcg-art",
+      "kind": "repo",
+      "label": "tcg-art",
+      "url": "https://github.com/j0ntz/tcg-art",
+      "owner": "j0ntz",
+      "language": "TypeScript",
+      "commits": 67,
+      "stars": 0,
+      "firstActivity": "2026-06-26T08:03:07Z",
+      "lastActivity": "2026-09-05T00:15:08Z",
+      "topics": [],
+      "description": ""
+    },
+    {
+      "id": "edgeapp/edge-exchange-plugins",
+      "kind": "repo",
+      "label": "edge-exchange-plugins",
+      "url": "https://github.com/EdgeApp/edge-exchange-plugins",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 58,
+      "stars": 13,
+      "firstActivity": "2026-02-26T00:09:28Z",
+      "lastActivity": "2026-09-01T20:21:35Z",
+      "topics": [],
+      "description": "Exchange-rate sources for the Edge Core"
+    },
+    {
+      "id": "j0ntz/cursor-autopilot",
+      "kind": "repo",
+      "label": "cursor-autopilot",
+      "url": "https://github.com/j0ntz/cursor-autopilot",
+      "owner": "j0ntz",
+      "language": "TypeScript",
+      "commits": 35,
+      "stars": 0,
+      "firstActivity": "2025-07-07T14:51:20Z",
+      "lastActivity": "2026-02-18T02:45:38Z",
+      "topics": [],
+      "description": "Remote control your Cursor AI coding sessions via Telegram, Gmail, and Feishu"
+    },
+    {
+      "id": "edgeapp/edge-currency-accountbased",
+      "kind": "repo",
+      "label": "edge-currency-accountbased",
+      "url": "https://github.com/EdgeApp/edge-currency-accountbased",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 29,
+      "stars": 25,
+      "firstActivity": "2026-02-19T22:26:58Z",
+      "lastActivity": "2026-09-01T20:26:02Z",
+      "topics": [],
+      "description": "Currency plugins for accounts based blockchains such as Ethereum, Xrp, and EOS"
+    },
+    {
+      "id": "edgeapp/edge-login-ui-rn",
+      "kind": "repo",
+      "label": "edge-login-ui-rn",
+      "url": "https://github.com/EdgeApp/edge-login-ui-rn",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 14,
+      "stars": 7,
+      "firstActivity": "2026-04-10T00:46:51Z",
+      "lastActivity": "2026-07-27T18:14:09Z",
+      "topics": [],
+      "description": "Edge login screens for React Native"
+    },
+    {
+      "id": "j0ntz/edge-stension",
+      "kind": "repo",
+      "label": "edge-stension",
+      "url": "https://github.com/j0ntz/edge-stension",
+      "owner": "j0ntz",
+      "language": "TypeScript",
+      "commits": 14,
+      "stars": 0,
+      "firstActivity": "2025-10-07T22:10:14Z",
+      "lastActivity": "2025-12-02T21:30:57Z",
+      "topics": [],
+      "description": "VS Code extension adding an Edge Tools activity bar: browse/toggle currency and swap plugins, flip env.json flags"
+    },
+    {
+      "id": "edgeapp/edge-core-js",
+      "kind": "repo",
+      "label": "edge-core-js",
+      "url": "https://github.com/EdgeApp/edge-core-js",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 12,
+      "stars": 81,
+      "firstActivity": "2026-06-12T08:30:14Z",
+      "lastActivity": "2026-08-31T18:02:50Z",
+      "topics": [],
+      "description": "Edge Core Javascript implementation. Provides Edge account and wallet functionality for NodeJS/HTML/React Native apps"
+    },
+    {
+      "id": "edgeapp/edge-currency-plugins",
+      "kind": "repo",
+      "label": "edge-currency-plugins",
+      "url": "https://github.com/EdgeApp/edge-currency-plugins",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 10,
+      "stars": 18,
+      "firstActivity": "2026-02-27T00:03:47Z",
+      "lastActivity": "2026-08-05T23:15:24Z",
+      "topics": [],
+      "description": "Edge currency plugin for UTXO based currencies, such as Bitcoin. "
+    },
+    {
+      "id": "j0ntz/esp-led-btc",
+      "kind": "repo",
+      "label": "esp-led-btc",
+      "url": "https://github.com/j0ntz/esp-led-btc",
+      "owner": "j0ntz",
+      "language": "C++",
+      "commits": 10,
+      "stars": 0,
+      "firstActivity": "2025-07-08T18:33:43Z",
+      "lastActivity": "2026-05-26T21:52:10Z",
+      "topics": [],
+      "description": "ESP32-driven LED matrix BTC price ticker in a 3D-printed frame (Mongoose OS, live OTA updates)"
+    },
+    {
+      "id": "edgeapp/react-native-zcash",
+      "kind": "repo",
+      "label": "react-native-zcash",
+      "url": "https://github.com/EdgeApp/react-native-zcash",
+      "owner": "EdgeApp",
+      "language": "Kotlin",
+      "commits": 6,
+      "stars": 8,
+      "firstActivity": "2026-04-10T22:29:16Z",
+      "lastActivity": "2026-08-28T07:40:43Z",
+      "topics": [],
+      "description": ""
+    },
+    {
+      "id": "edgeapp/zcash-native",
+      "kind": "repo",
+      "label": "zcash-native",
+      "url": "https://github.com/EdgeApp/zcash-native",
+      "owner": "EdgeApp",
+      "language": "Kotlin",
+      "commits": 6,
+      "stars": 1,
+      "firstActivity": "2026-04-10T22:29:16Z",
+      "lastActivity": "2026-08-28T07:40:43Z",
+      "topics": [],
+      "description": "Native Zcash wallet library for React Native and Node.js (zingolib)"
+    },
+    {
+      "id": "j0ntz/j0ntz-homepage",
+      "kind": "repo",
+      "label": "j0ntz-homepage",
+      "url": "https://github.com/j0ntz/j0ntz-homepage",
+      "owner": "j0ntz",
+      "language": "JavaScript",
+      "commits": 6,
+      "stars": 0,
+      "firstActivity": "2026-09-05T00:16:04Z",
+      "lastActivity": "2026-09-06T00:48:47Z",
+      "topics": [],
+      "description": ""
+    },
+    {
+      "id": "edgeapp/react-native-piratechain",
+      "kind": "repo",
+      "label": "react-native-piratechain",
+      "url": "https://github.com/EdgeApp/react-native-piratechain",
+      "owner": "EdgeApp",
+      "language": "Kotlin",
+      "commits": 6,
+      "stars": 0,
+      "firstActivity": "2026-04-10T22:34:25Z",
+      "lastActivity": "2026-08-28T07:45:19Z",
+      "topics": [],
+      "description": ""
+    },
+    {
+      "id": "edgeapp/edge-reports-server",
+      "kind": "repo",
+      "label": "edge-reports-server",
+      "url": "https://github.com/EdgeApp/edge-reports-server",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 5,
+      "stars": 3,
+      "firstActivity": "2026-06-10T07:19:04Z",
+      "lastActivity": "2026-07-30T20:52:47Z",
+      "topics": [],
+      "description": ""
+    },
+    {
+      "id": "edgeapp/edge-rates-server",
+      "kind": "repo",
+      "label": "edge-rates-server",
+      "url": "https://github.com/EdgeApp/edge-rates-server",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 2,
+      "stars": 3,
+      "firstActivity": "2026-08-13T18:14:30Z",
+      "lastActivity": "2026-08-28T23:01:42Z",
+      "topics": [],
+      "description": ""
+    },
+    {
+      "id": "edgeapp/disklet",
+      "kind": "repo",
+      "label": "disklet",
+      "url": "https://github.com/EdgeApp/disklet",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 1,
+      "stars": 8,
+      "firstActivity": "2026-06-02T23:19:14Z",
+      "lastActivity": "2026-06-02T23:19:14Z",
+      "topics": [],
+      "description": "A tiny, composable filesystem API"
+    },
+    {
+      "id": "edgeapp/edge-currency-monero",
+      "kind": "repo",
+      "label": "edge-currency-monero",
+      "url": "https://github.com/EdgeApp/edge-currency-monero",
+      "owner": "EdgeApp",
+      "language": "TypeScript",
+      "commits": 1,
+      "stars": 6,
+      "firstActivity": "2026-06-02T23:23:00Z",
+      "lastActivity": "2026-06-02T23:23:00Z",
+      "topics": [],
+      "description": "Javascript Monero currency plugin for Edge"
+    }
+  ],
+  "edges": [
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-react-gui",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-core-js",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-currency-accountbased",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-currency-plugins",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-currency-monero",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-exchange-plugins",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-login-ui-rn",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-reports-server",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/edge-rates-server",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/react-native-zcash",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/react-native-piratechain",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/zcash-native",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:edge-wallet",
+      "target": "edgeapp/disklet",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:agent-orchestration",
+      "target": "edgeapp/edge-dev-agents",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:agent-orchestration",
+      "target": "j0ntz/cursor-autopilot",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:agent-orchestration",
+      "target": "j0ntz/j0ntz-homepage",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "project:agent-evals",
+      "target": "edgeapp/edge-dev-agents",
+      "weight": 1,
+      "reason": "link"
+    },
+    {
+      "source": "j0ntz/polymarket-copy-trading-bot",
+      "target": "edgeapp/edge-react-gui",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "j0ntz/tcg-art",
+      "target": "edgeapp/edge-react-gui",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "j0ntz/tcg-art",
+      "target": "j0ntz/polymarket-copy-trading-bot",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-exchange-plugins",
+      "target": "j0ntz/polymarket-copy-trading-bot",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-exchange-plugins",
+      "target": "j0ntz/tcg-art",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "j0ntz/cursor-autopilot",
+      "target": "j0ntz/tcg-art",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "j0ntz/cursor-autopilot",
+      "target": "edgeapp/edge-exchange-plugins",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-currency-accountbased",
+      "target": "edgeapp/edge-exchange-plugins",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-currency-accountbased",
+      "target": "j0ntz/cursor-autopilot",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-login-ui-rn",
+      "target": "j0ntz/cursor-autopilot",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-login-ui-rn",
+      "target": "edgeapp/edge-currency-accountbased",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "j0ntz/edge-stension",
+      "target": "edgeapp/edge-currency-accountbased",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "j0ntz/edge-stension",
+      "target": "edgeapp/edge-login-ui-rn",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-core-js",
+      "target": "edgeapp/edge-login-ui-rn",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-core-js",
+      "target": "j0ntz/edge-stension",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-currency-plugins",
+      "target": "j0ntz/edge-stension",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-currency-plugins",
+      "target": "edgeapp/edge-core-js",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/zcash-native",
+      "target": "edgeapp/react-native-zcash",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/react-native-piratechain",
+      "target": "edgeapp/react-native-zcash",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/react-native-piratechain",
+      "target": "edgeapp/zcash-native",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-reports-server",
+      "target": "edgeapp/edge-core-js",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-reports-server",
+      "target": "edgeapp/edge-currency-plugins",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-rates-server",
+      "target": "edgeapp/edge-currency-plugins",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-rates-server",
+      "target": "edgeapp/edge-reports-server",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/disklet",
+      "target": "edgeapp/edge-reports-server",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/disklet",
+      "target": "edgeapp/edge-rates-server",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-currency-monero",
+      "target": "edgeapp/edge-rates-server",
+      "weight": 0.3,
+      "reason": "language"
+    },
+    {
+      "source": "edgeapp/edge-currency-monero",
+      "target": "edgeapp/disklet",
+      "weight": 0.3,
+      "reason": "language"
+    }
+  ],
+  "layout": {
+    "positions": [
+      0.148,
+      -0.6493,
+      0.0493,
+      -0.3672,
+      1.9275,
+      0.106,
+      1.5107,
+      1.9763,
+      0.1206,
+      0.5813,
+      2.4186,
+      0.1283,
+      -0.9619,
+      -0.7123,
+      -0.4498,
+      -1.9672,
+      -0.8681,
+      0.0534,
+      -1.7887,
+      0.2606,
+      -0.0026,
+      -0.8172,
+      -0.1444,
+      0.3283,
+      -0.7985,
+      1.0218,
+      0.1283,
+      0.1057,
+      0.3476,
+      0.4631,
+      0.0053,
+      0.2541,
+      -0.3883,
+      1.1279,
+      0.5294,
+      -0.2502,
+      0.8478,
+      -0.109,
+      0.27,
+      0.658,
+      -0.5306,
+      -0.6486,
+      -1.7788,
+      1.3463,
+      -0.1574,
+      1.2878,
+      -0.525,
+      -0.1788,
+      0.8102,
+      -1.3172,
+      -0.4251,
+      0.2422,
+      1.3192,
+      -0.2421,
+      1.0616,
+      -0.8824,
+      0.5137,
+      0.6639,
+      -1.3785,
+      0.1591,
+      -0.1087,
+      -1.463,
+      -0.3497,
+      -0.5866,
+      -1.1791,
+      0.3058,
+      0.0982,
+      -1.5129,
+      0.5131
+    ],
+    "scale": 0.70287,
+    "seed": 7
+  }
+}
