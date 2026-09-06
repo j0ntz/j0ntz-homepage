@@ -8,7 +8,13 @@ Decided 2026-09-04 from the taste board (kept: bruno-simon.com, samsy.ninja), th
 
 The site is one page. A recruiter should know who Jon is, what he builds, and where to find the work within ten seconds, without touching anything. The centrepiece is a living graph of Jon's real public repos and projects, sized by activity, floating in 3D. It is the one loud thing on the page and everything else recedes.
 
-It is not a game. No driving, no collecting, no scroll-jacked story. Interaction is hover (a node and its neighbours light up, a label appears) and click (the project opens). The graph drifts on its own and reacts to the cursor; it never needs the visitor.
+It is not a game. No driving, no collecting, no scroll-jacked story. The graph drifts on its own and never needs the visitor, but it hands over control the moment the visitor reaches for it.
+
+Desktop interaction: the slow rotation stops while the cursor is over the graph. Dragging rotates it directly, with momentum on release (a flick keeps spinning and eases out). Hover on a node lights it and its neighbours and shows its label; click opens the project. Rotation resumes on its own about five seconds after the cursor leaves.
+
+Touch interaction: horizontal drag spins the graph with the same momentum; vertical drag is page scroll and the canvas never captures it (`touch-action: pan-y`). The first tap on a node acts as hover (label and neighbours), a second tap opens it. Auto-rotation pauses on the first touch and resumes about five seconds after the last.
+
+Meaning at rest: the eight accent nodes carry their label at rest on every device, in the mono face. A visitor who never touches anything still reads eight project names and their relative weight. Hover-only meaning is a defect.
 
 ## Color
 
@@ -51,7 +57,7 @@ Zones, top to bottom, in one scroll:
 
 Section treatments differ: zone 1 is a scene, zone 2 is a list, zone 3 is prose. No three-up card row, no badge above the name, no stat banner, no logo strip, no numbered steps.
 
-Mobile first at 390px: the graph shrinks to a square behind the name, hover becomes tap, the links stack. Nothing is hidden on mobile that is shown on desktop.
+Mobile at 390px is its own layout, not the desktop one squeezed: the name, the one line, the stacked links, and the call to action come first with nothing behind them; the graph follows as its own full-width square section with its eight labels; the work list follows the graph. Nothing is hidden on mobile that is shown on desktop, and the first screen on a phone conveys as much as the first screen on a desktop.
 
 ## Motion
 
@@ -60,7 +66,8 @@ Motion communicates state or directs attention; it never decorates.
 - The graph drifts slowly at rest (a full rotation in about 90 seconds) and responds to the cursor with parallax. It eases with physical curves; nothing snaps.
 - Hover on a node: the node and its neighbours brighten to accent over 150ms, the label fades in, unrelated nodes dim to 40 percent.
 - The call to action has a hover state (glow widens) and a focus ring in accent.
-- Scroll does not trigger animation. Sections are visible at rest.
+- Scroll does not trigger animation and never drives the graph. Sections are visible at rest.
+- Drag momentum uses a physical decay (a flick eases out over one to two seconds), and the rotation resume is a slow ease-in, never a jump.
 - `prefers-reduced-motion` stops the drift and the parallax; hover states remain.
 - Frame budget: 60fps on a 2020 laptop, 30fps on a mid-range phone. Layout runs in a worker; the main thread only draws.
 
@@ -73,7 +80,7 @@ Every line in Jon's voice, specific over general. The test for a sentence: if it
 - Data: Jon's public repos and named projects, fetched at build time from the GitHub API, cached in the repo as JSON so a build never depends on the API being up. Node size from commit count in the last two years; edges from shared topics, shared language, and explicit links in the data file.
 - Palette: nodes are `--foreground-muted` at rest, the eight most active in `--accent` with the glow. Edges are accent at 20 percent. Nothing else in the scene has color.
 - Lighting reference: no scene lighting at all; flat discs and lines with the radial glow, the way the palette picker previewed it. No bloom pass, no orbs, no fog.
-- Camera: fixed distance, slow orbit, parallax from the cursor. No user camera control.
+- Camera: fixed distance, slow orbit at rest, parallax from the cursor. Rotation is the only user control: hover stops it, drag takes it over with momentum, and it resumes after idle. No zoom, no pan.
 - Density: 40 to 60 nodes on desktop, the 25 most active on mobile.
 
 ## Forbidden
