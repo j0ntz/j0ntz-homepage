@@ -4,13 +4,19 @@ import { GraphSnapshot } from "@/components/GraphSnapshot";
 import { RepoGraph } from "@/components/RepoGraph";
 import graphJson from "@/content/graph.json";
 import site from "@/content/site.json";
-import { selectNodes } from "@/lib/graph-scene";
+import {
+  desktopNominalSquarePx,
+  mobileNominalSquarePx,
+  selectNodes,
+} from "@/lib/graph-scene";
 import { isGraphData, type GraphData, type GraphNode } from "@/lib/graph-types";
 
-// Zone 1 of the one page: the graph full-bleed, the name and the one line
-// top-left, the three links top-right, the call to action bottom-left. The
-// graph is server-rendered as SVG so it is in the first painted frame; the
-// live scene takes over on the client. Zones 2 and 3 are stubs here.
+// Zone 1 of the one page. Desktop: the graph full-bleed, the name and the
+// one line top-left, the three links top-right, the call to action
+// bottom-left. Mobile (below 768px): the name block first with nothing
+// behind it, then the graph as its own full-width square. The graph is
+// server-rendered as SVG so it is in the first painted frame; the live
+// scene takes over on the client. Zones 2 and 3 are stubs here.
 
 const graph = loadGraph(graphJson);
 const maxCommits = Math.max(1, ...graph.nodes.map((node) => node.commits));
@@ -20,31 +26,8 @@ const mobileNodes = selectNodes(graph.nodes, false);
 const Home: React.FC = () => {
   return (
     <main>
-      <section className="hero relative overflow-hidden" aria-labelledby="site-name">
-        <div className="hero-graph">
-          <RepoGraph data={graph} copy={site.graph} maxCommits={maxCommits}>
-            <GraphSnapshot
-              className="hidden h-full w-full md:block"
-              id="desktop"
-              nodes={desktopNodes}
-              edges={edgesAmong(graph, desktopNodes)}
-              layout={graph.layout}
-              maxCommits={maxCommits}
-              ariaLabel={site.graph.ariaLabel}
-            />
-            <GraphSnapshot
-              className="h-full w-full md:hidden"
-              id="mobile"
-              nodes={mobileNodes}
-              edges={edgesAmong(graph, mobileNodes)}
-              layout={graph.layout}
-              maxCommits={maxCommits}
-              ariaLabel={site.graph.ariaLabel}
-            />
-          </RepoGraph>
-        </div>
-
-        <div className="hero-overlay pointer-events-none relative z-10 flex h-full flex-col justify-between px-3 py-rhythm md:px-10 md:py-[calc(var(--rhythm)*2)]">
+      <section className="hero" aria-labelledby="site-name">
+        <div className="hero-overlay pointer-events-none flex flex-col justify-between gap-[calc(var(--rhythm)*2)] px-3 py-[calc(var(--rhythm)*2)] md:px-10">
           <div className="flex flex-col gap-rhythm md:flex-row md:items-start md:justify-between">
             <div className="max-w-[34ch]">
               <h1
@@ -62,6 +45,31 @@ const Home: React.FC = () => {
               {site.cta.label}
             </a>
           </div>
+        </div>
+
+        <div className="hero-graph">
+          <RepoGraph data={graph} copy={site.graph} maxCommits={maxCommits}>
+            <GraphSnapshot
+              className="hidden md:block"
+              id="desktop"
+              squarePx={desktopNominalSquarePx}
+              nodes={desktopNodes}
+              edges={edgesAmong(graph, desktopNodes)}
+              layout={graph.layout}
+              maxCommits={maxCommits}
+              ariaLabel={site.graph.ariaLabel}
+            />
+            <GraphSnapshot
+              className="md:hidden"
+              id="mobile"
+              squarePx={mobileNominalSquarePx}
+              nodes={mobileNodes}
+              edges={edgesAmong(graph, mobileNodes)}
+              layout={graph.layout}
+              maxCommits={maxCommits}
+              ariaLabel={site.graph.ariaLabel}
+            />
+          </RepoGraph>
         </div>
       </section>
 

@@ -2,18 +2,30 @@ import * as React from "react";
 
 import {
   accentCount,
+  anchorLabel,
+  discBox,
   edgeOpacity,
   haloScale,
+  labelFontPx,
+  labelLineHeight,
+  labelledCount,
+  layOutLabels,
+  monoAdvanceEm,
   nodeRadius,
   projectAtRest,
+  type ProjectedNode,
 } from "@/lib/graph-scene";
 import type { GraphEdge, GraphLayout, GraphNode } from "@/lib/graph-types";
 
 // The static picture of the graph: the same nodes, the same positions, and
 // the same camera as the first WebGL frame, drawn as SVG on the server. It is
 // what the first painted frame shows, what a crawler reads (every node is a
-// link), and what a browser without WebGL keeps. Colors are the tokens by
-// name; the file has no literal.
+// link), and what a browser without WebGL keeps. The eight accent nodes carry
+// their label at rest as HTML over the SVG, in the mono face at a real pixel
+// size (SVG text would scale with the viewport), placed by the rule the live
+// scene applies per frame: beside the node on the side away from the centre,
+// pushed clear of the other labels, kept inside the square. Colors are the
+// tokens by name; the file has no literal.
 
 interface Props {
   nodes: GraphNode[];
@@ -26,6 +38,10 @@ interface Props {
    * each SVG owns its gradient and a fill never resolves into a hidden
    * sibling. */
   id: string;
+  /** Side of the square, in CSS pixels, the labels are laid out for. Their
+   * positions are emitted in percent, so any other size scales the picture
+   * and keeps the text its real size. */
+  squarePx: number;
   ariaLabel: string;
   className?: string;
 }
@@ -36,6 +52,7 @@ export const GraphSnapshot: React.FC<Props> = ({
   layout,
   maxCommits,
   id,
+  squarePx,
   ariaLabel,
   className,
 }) => {
@@ -55,64 +72,114 @@ export const GraphSnapshot: React.FC<Props> = ({
     .sort((a, b) => b.depth - a.depth)
     .map((entry) => entry.index);
   const gradientId = `graph-glow-${id}`;
+  const labelled = nodes.slice(0, labelledCount);
+  const tagStyles = layOutTags(labelled, projected, squarePx);
 
   return (
-    <svg
-      className={className}
-      viewBox="-1 -1 2 2"
-      preserveAspectRatio="xMidYMid meet"
-      role="img"
-      aria-label={ariaLabel}
-    >
-      <defs>
-        <radialGradient id={gradientId}>
-          <stop offset={`${(100 / haloScale).toFixed(2)}%`} className="graph-glow-stop" />
-          <stop offset="100%" className="graph-glow-stop-end" />
-        </radialGradient>
-      </defs>
-      <g className="stroke-accent" strokeOpacity={edgeOpacity} strokeWidth={1} vectorEffect="non-scaling-stroke">
-        {edges.map((edge) => {
-          const source = indexById.get(edge.source);
-          const target = indexById.get(edge.target);
-          if (source == null || target == null) return null;
-          const a = projected[source];
-          const b = projected[target];
-          return (
-            <line
-              key={`${edge.source}|${edge.target}`}
-              x1={a.x.toFixed(4)}
-              y1={a.y.toFixed(4)}
-              x2={b.x.toFixed(4)}
-              y2={b.y.toFixed(4)}
-              vectorEffect="non-scaling-stroke"
-            />
-          );
-        })}
-      </g>
-      {order.map((index) => {
-        const node = nodes[index];
-        const point = projected[index];
-        const accent = index < accentCount;
-        return (
-          <a key={node.id} href={node.url} target="_blank" rel="noopener noreferrer">
-            <title>{node.label}</title>
-            {accent ? (
-              <circle
-                cx={point.x.toFixed(4)}
-                cy={point.y.toFixed(4)}
-                r={(point.radius * haloScale).toFixed(4)}
-                fill={`url(#${gradientId})`}
-              />
-            ) : null}
-            <circle
-              cx={point.x.toFixed(4)}
-              cy={point.y.toFixed(4)}
-              r={point.radius.toFixed(4)}
-              className={accent ? "fill-accent" : "fill-foreground-muted"}
-            />
-          </a>
-        );
-      })}
-    </svg>
+    <div className={className == null ? "graph-frame" : `graph-frame ${className}`}>
+      <div className="graph-square">
+        <svg
+          className="block h-full w-full"
+          viewBox="-1 -1 2 2"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label={ariaLabel}
+        >
+          <defs>
+            <radialGradient id={gradientId}>
+              <stop offset={`${(100 / haloScale).toFixed(2)}%`} className="graph-glow-stop" />
+              <stop offset="100%" className="graph-glow-stop-end" />
+            </radialGradient>
+          </defs>
+          <g className="stroke-accent" strokeOpacity={edgeOpacity} strokeWidth={1} vectorEffect="non-scaling-stroke">
+            {edges.map((edge) => {
+              const source = indexById.get(edge.source);
+              const target = indexById.get(edge.target);
+              if (source == null || target == null) return null;
+              const a = projected[source];
+              const b = projected[target];
+              return (
+                <line
+                  key={`${edge.source}|${edge.target}`}
+                  x1={a.x.toFixed(4)}
+                  y1={a.y.toFixed(4)}
+                  x2={b.x.toFixed(4)}
+                  y2={b.y.toFixed(4)}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
+          </g>
+          {order.map((index) => {
+            const node = nodes[index];
+            const point = projected[index];
+            const accent = index < accentCount;
+            return (
+              <a key={node.id} href={node.url} target="_blank" rel="noopener noreferrer">
+                <title>{node.label}</title>
+                {accent ? (
+                  <circle
+                    cx={point.x.toFixed(4)}
+                    cy={point.y.toFixed(4)}
+                    r={(point.radius * haloScale).toFixed(4)}
+                    fill={`url(#${gradientId})`}
+                  />
+                ) : null}
+                <circle
+                  cx={point.x.toFixed(4)}
+                  cy={point.y.toFixed(4)}
+                  r={point.radius.toFixed(4)}
+                  className={accent ? "fill-accent" : "fill-foreground-muted"}
+                />
+              </a>
+            );
+          })}
+        </svg>
+        <div className="graph-tags" aria-hidden>
+          {labelled.map((node, index) => (
+            <span key={node.id} className="graph-tag" style={tagStyles[index]}>
+              {node.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 };
+
+/** Where the labels at rest sit, as CSS the server can emit: the shared
+ * placement run at the nominal square size with the label boxes estimated
+ * from the mono face (a monospace label is its character count wide), then
+ * expressed in percent of the square. The clamp keeps a label inside the
+ * square at every real size; the live scene's frame loop runs the same
+ * placement in pixels, so the swap keeps every label in place. */
+function layOutTags(
+  labelled: GraphNode[],
+  projected: ProjectedNode[],
+  squarePx: number,
+): React.CSSProperties[] {
+  const toPx = (unit: number): number => ((unit + 1) / 2) * squarePx;
+  const height = labelFontPx * labelLineHeight;
+  const centre = squarePx / 2;
+  const radiusPx = (point: ProjectedNode): number => (point.radius / 2) * squarePx;
+  const boxes = labelled.map((node, index) => {
+    const point = projected[index];
+    const width = node.label.length * monoAdvanceEm * labelFontPx;
+    return anchorLabel(toPx(point.x), toPx(point.y), radiusPx(point), centre, centre, width, height);
+  });
+  const nodeYs = labelled.map((_, index) => toPx(projected[index].y));
+  const discs = labelled.map((_, index) => {
+    const point = projected[index];
+    return discBox(toPx(point.x), toPx(point.y), radiusPx(point));
+  });
+  const placed = layOutLabels(boxes, nodeYs, discs, squarePx, squarePx);
+  return placed.map((box, index) => {
+    const chars = labelled[index].label.length;
+    const left = ((box.left / squarePx) * 100).toFixed(2);
+    const top = ((box.top / squarePx) * 100).toFixed(2);
+    return {
+      left: `clamp(var(--space-base), ${left}%, 100% - ${chars}ch - var(--space-base))`,
+      top: `clamp(var(--space-base), ${top}%, 100% - var(--graph-tag-height) - var(--space-base))`,
+    };
+  });
+}

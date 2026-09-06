@@ -1,11 +1,11 @@
 "use client";
 
 /* eslint-disable react-hooks/immutability --
-   The scene's typed arrays and three.js buffer attributes are mutable GPU
-   state written once per frame from useFrame, outside React's render. The
-   compiler rule reads them as frozen hook results; they are not. */
+   The scene's typed arrays, three.js buffer attributes, and the spin state
+   are mutable per-frame state written from useFrame and the pointer
+   handlers, outside React's render. The compiler rule reads them as frozen
+   hook results; they are not. */
 
-import { Html } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as React from "react";
 import * as THREE from "three";
@@ -13,16 +13,29 @@ import * as THREE from "three";
 import { readColorTokens, type ColorTokens } from "@/lib/css-color";
 import {
   accentCount,
+  anchorLabel,
+  autoSpinSpeed,
   baseFovDegrees,
   cameraDistance,
+  clampBox,
   dimmedOpacity,
+  discBox,
+  dragRadiansPerWidth,
+  dragThresholdPx,
   edgeOpacity,
+  flickWindowMs,
   fovForAspect,
   haloScale,
   hoverSeconds,
-  orbitPeriodSeconds,
+  labelledCount,
+  layOutLabels,
+  maxSpinSpeed,
+  momentumDecay,
   parallaxPitch,
   parallaxYaw,
+  resumeDelaySeconds,
+  resumeEase,
+  type LabelBox,
 } from "@/lib/graph-scene";
 import type { GraphNode } from "@/lib/graph-types";
 import type {
@@ -36,8 +49,16 @@ import type { GraphCopy, GraphSelection } from "./RepoGraph";
 // line segment set for every edge, and the same quad again for the halos
 // behind the accent nodes. Flat colors from the tokens, no lights, no
 // post-processing. Positions arrive from the layout worker; this thread
-// eases toward them, turns the group for the orbit and the parallax, ramps
-// the hover state, and projects the nodes once per frame for picking.
+// eases toward them, turns the group for the spin and the parallax, ramps
+// the hover state, projects the nodes once per frame for picking, and lays
+// the DOM labels (the eight at rest, the hovered one) over the canvas at
+// the projected positions.
+//
+// Rotation is the one control. The rest orbit stops while the cursor is over
+// the graph, a drag turns the graph directly and a flick coasts out, and the
+// orbit eases back in about five seconds after the cursor leaves or the last
+// touch lifts. Vertical touch movement is the page's; the wrapper declares
+// touch-action: pan-y and the browser cancels the pointer when it scrolls.
 
 interface Props {
   selection: GraphSelection;
@@ -52,15 +73,42 @@ interface PointerState {
   /** Pixels from the canvas's top-left. */
   x: number;
   y: number;
+  /** A mouse cursor is over the graph. Always false for touch. */
   inside: boolean;
+  /** The last pointer was a finger, so mouse-only behaviour is off. */
   touch: boolean;
+}
+
+/** The rotation the visitor controls, written by the pointer handlers and
+ * advanced once per frame. */
+interface SpinState {
+  /** Rotation about the vertical axis, radians, accumulated. */
+  yaw: number;
+  /** Current rate, radians per second: the rest orbit, a flick coasting
+   * out, or zero while the cursor holds the graph. */
+  velocity: number;
+  /** A pointer is down on the graph. */
+  pressed: boolean;
+  /** The press moved past dragThresholdPx: a drag, not a tap or a click. */
+  dragging: boolean;
+  pointerId: number | null;
+  startX: number;
+  lastX: number;
+  /** performance.now() of the last drag move. */
+  lastMoveAt: number;
+  /** Rate of the drag over its recent moves, for momentum on release. */
+  dragVelocity: number;
+  /** performance.now() when the cursor left or the last touch lifted; the
+   * rest orbit resumes resumeDelaySeconds later. */
+  releasedAt: number;
+  /** Canvas width in CSS pixels at press time, for radians per pixel. */
+  width: number;
 }
 
 /** Per-node screen position and radius in CSS pixels, written every frame. */
 type ScreenBuffer = Float32Array;
 
-/** Which side of the node the label hangs on, so it stays in the viewport. */
-type LabelSide = "left" | "right";
+type TagElements = Array<HTMLSpanElement | null>;
 
 const minPickRadiusPx = 14;
 const positionEase = 6;
@@ -69,6 +117,11 @@ const hoverScale = 0.15;
 const discQuadExtent = 1.08;
 const litEdgeOpacity = 0.75;
 const readyAfterFrames = 2;
+/** Weight of the newest move in the smoothed drag rate. */
+const dragVelocityBlend = 0.5;
+/** Damp rate of a label's collision offset, so a label glides clear of
+ * another rather than jumping. */
+const labelOffsetEase = 12;
 
 export const RepoGraphCanvas: React.FC<Props> = ({
   selection,
@@ -78,14 +131,28 @@ export const RepoGraphCanvas: React.FC<Props> = ({
   onActivate,
 }) => {
   const [hovered, setHovered] = React.useState<number | null>(null);
-  const [labelSide, setLabelSide] = React.useState<LabelSide>("right");
+  const [dragging, setDragging] = React.useState(false);
   const [tokens] = React.useState<ColorTokens>(() =>
     readColorTokens(document.documentElement),
   );
   const pointer = React.useRef<PointerState>({ x: 0, y: 0, inside: false, touch: false });
+  const spin = React.useRef<SpinState>({
+    yaw: 0,
+    velocity: reducedMotion ? 0 : autoSpinSpeed,
+    pressed: false,
+    dragging: false,
+    pointerId: null,
+    startX: 0,
+    lastX: 0,
+    lastMoveAt: 0,
+    dragVelocity: 0,
+    releasedAt: -Infinity,
+    width: 1,
+  });
   const screen = React.useRef<ScreenBuffer>(new Float32Array(selection.nodes.length * 3));
   const hoveredRef = React.useRef<number | null>(null);
-  const labelAnchor = React.useRef<THREE.Group>(null);
+  const tags = React.useRef<TagElements>([]);
+  const label = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     hoveredRef.current = hovered;
@@ -94,85 +161,176 @@ export const RepoGraphCanvas: React.FC<Props> = ({
   const pick = (x: number, y: number): number | null =>
     pickNearest(screen.current, selection.nodes.length, x, y);
 
-  const localPoint = (event: React.PointerEvent | React.MouseEvent): { x: number; y: number } => {
+  const localPoint = (event: React.PointerEvent<HTMLDivElement>): { x: number; y: number } => {
     const rect = event.currentTarget.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (event.pointerType === "touch") return;
+  const handleHover = (index: number | null): void => {
+    hoveredRef.current = index;
+    setHovered(index);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
     const point = localPoint(event);
-    pointer.current = { x: point.x, y: point.y, inside: true, touch: false };
+    const touch = event.pointerType === "touch";
+    const now = performance.now();
+    const state = spin.current;
+    state.pressed = true;
+    state.dragging = false;
+    state.pointerId = event.pointerId;
+    state.startX = point.x;
+    state.lastX = point.x;
+    state.lastMoveAt = now;
+    state.dragVelocity = 0;
+    state.width = Math.max(1, event.currentTarget.clientWidth);
+    // A touch pauses the rest orbit from the first contact.
+    state.releasedAt = now;
+    pointer.current = { x: point.x, y: point.y, inside: !touch, touch };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>): void => {
+    const point = localPoint(event);
+    const state = spin.current;
+    if (event.pointerType !== "touch") {
+      pointer.current = { x: point.x, y: point.y, inside: true, touch: false };
+    }
+    if (!state.pressed || event.pointerId !== state.pointerId) return;
+    if (!state.dragging) {
+      if (Math.abs(point.x - state.startX) < dragThresholdPx) return;
+      state.dragging = true;
+      state.lastX = point.x;
+      setDragging(true);
+      if (!pointer.current.touch) handleHover(null);
+    }
+    const now = performance.now();
+    const seconds = Math.max(1, now - state.lastMoveAt) / 1000;
+    const radians = ((point.x - state.lastX) / state.width) * dragRadiansPerWidth;
+    state.yaw += radians;
+    state.dragVelocity =
+      state.dragVelocity * (1 - dragVelocityBlend) + (radians / seconds) * dragVelocityBlend;
+    state.lastX = point.x;
+    state.lastMoveAt = now;
+  };
+
+  const endPress = (event: React.PointerEvent<HTMLDivElement>, cancelled: boolean): void => {
+    const state = spin.current;
+    if (!state.pressed || event.pointerId !== state.pointerId) return;
+    const now = performance.now();
+    const wasDragging = state.dragging;
+    state.pressed = false;
+    state.dragging = false;
+    state.pointerId = null;
+    state.releasedAt = now;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (wasDragging) setDragging(false);
+    if (cancelled) {
+      // The browser took the gesture (a vertical scroll): the graph holds.
+      state.velocity = 0;
+      return;
+    }
+    if (wasDragging) {
+      const flick = !reducedMotion && now - state.lastMoveAt < flickWindowMs;
+      state.velocity = flick
+        ? THREE.MathUtils.clamp(state.dragVelocity, -maxSpinSpeed, maxSpinSpeed)
+        : 0;
+      return;
+    }
+    // A press that never moved: a click, or a tap.
+    const point = localPoint(event);
+    const index = pick(point.x, point.y);
+    if (event.pointerType === "touch") {
+      // The first tap on a node lights it and shows the label, a second tap
+      // on the same node opens it, a tap elsewhere clears.
+      if (index != null && index === hoveredRef.current) {
+        onActivate(selection.nodes[index]);
+      } else {
+        handleHover(index);
+      }
+      return;
+    }
+    if (index != null) onActivate(selection.nodes[index]);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>): void => {
+    endPress(event, false);
+  };
+
+  const handlePointerCancel = (event: React.PointerEvent<HTMLDivElement>): void => {
+    endPress(event, true);
   };
 
   const handlePointerLeave = (event: React.PointerEvent<HTMLDivElement>): void => {
     if (event.pointerType === "touch") return;
     pointer.current = { ...pointer.current, inside: false };
-  };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
-    if (event.pointerType !== "touch") return;
-    // Touch: the first tap on a node lights it and shows the label, a second
-    // tap on the same node opens it, a tap elsewhere clears.
-    const point = localPoint(event);
-    pointer.current = { x: point.x, y: point.y, inside: false, touch: true };
-    const index = pick(point.x, point.y);
-    if (index != null && index === hoveredRef.current) {
-      onActivate(selection.nodes[index]);
-      return;
-    }
-    handleHover(index, sideFor(screen.current, index, event.currentTarget.clientWidth));
-  };
-
-  const handleHover = (index: number | null, side: LabelSide): void => {
-    setHovered(index);
-    setLabelSide(side);
-  };
-
-  const handleClick = (event: React.MouseEvent<HTMLDivElement>): void => {
-    if (pointer.current.touch) return;
-    const point = localPoint(event);
-    const index = pick(point.x, point.y);
-    if (index != null) onActivate(selection.nodes[index]);
+    spin.current.releasedAt = performance.now();
   };
 
   const hoveredNode = hovered == null ? null : selection.nodes[hovered];
+  const labelled = selection.nodes.slice(0, labelledCount);
 
   return (
-    <Canvas
-      className={hovered == null ? "touch-manipulation" : "cursor-pointer touch-manipulation"}
-      dpr={[1, 2]}
-      flat
-      frameloop="always"
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-      camera={{ position: [0, 0, cameraDistance], fov: baseFovDegrees, near: 0.1, far: 50 }}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
+    <div
+      className={
+        dragging
+          ? "relative h-full w-full cursor-grabbing touch-pan-y select-none"
+          : hovered == null
+            ? "relative h-full w-full touch-pan-y select-none"
+            : "relative h-full w-full cursor-pointer touch-pan-y select-none"
+      }
       onPointerDown={handlePointerDown}
-      onClick={handleClick}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onPointerLeave={handlePointerLeave}
     >
-      <CameraRig />
-      <GraphScene
-        selection={selection}
-        tokens={tokens}
-        reducedMotion={reducedMotion}
-        pointer={pointer}
-        screen={screen}
-        hovered={hovered}
-        labelAnchor={labelAnchor}
-        onHover={handleHover}
-        onReady={onReady}
-      />
-      <group ref={labelAnchor}>
-        {hoveredNode != null ? <NodeLabel node={hoveredNode} copy={copy} side={labelSide} /> : null}
-      </group>
-    </Canvas>
+      <Canvas
+        dpr={[1, 2]}
+        flat
+        frameloop="always"
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        camera={{ position: [0, 0, cameraDistance], fov: baseFovDegrees, near: 0.1, far: 50 }}
+      >
+        <CameraRig />
+        <GraphScene
+          selection={selection}
+          tokens={tokens}
+          reducedMotion={reducedMotion}
+          pointer={pointer}
+          spin={spin}
+          screen={screen}
+          hovered={hovered}
+          tags={tags}
+          label={label}
+          onHover={handleHover}
+          onReady={onReady}
+        />
+      </Canvas>
+      <div className="graph-tags" aria-hidden>
+        {labelled.map((node, index) => (
+          <span
+            key={node.id}
+            ref={(element) => {
+              tags.current[index] = element;
+            }}
+            className="graph-tag"
+          >
+            {node.label}
+          </span>
+        ))}
+        {hoveredNode != null ? <NodeLabel ref={label} node={hoveredNode} copy={copy} /> : null}
+      </div>
+    </div>
   );
 };
 
 // ---------------------------------------------------------------------------
 // Camera: the vertical fov follows the aspect so the WebGL view covers the
-// same region as the SVG snapshot with xMidYMid slice.
+// same region as the SVG snapshot with xMidYMid meet.
 
 const CameraRig: React.FC = () => {
   const camera = useThree((state) => state.camera);
@@ -195,10 +353,12 @@ interface SceneProps {
   tokens: ColorTokens;
   reducedMotion: boolean;
   pointer: React.RefObject<PointerState>;
+  spin: React.RefObject<SpinState>;
   screen: React.RefObject<ScreenBuffer>;
   hovered: number | null;
-  labelAnchor: React.RefObject<THREE.Group | null>;
-  onHover: (index: number | null, side: LabelSide) => void;
+  tags: React.RefObject<TagElements>;
+  label: React.RefObject<HTMLDivElement | null>;
+  onHover: (index: number | null) => void;
   onReady: () => void;
 }
 
@@ -225,9 +385,11 @@ const GraphScene: React.FC<SceneProps> = ({
   tokens,
   reducedMotion,
   pointer,
+  spin,
   screen,
   hovered,
-  labelAnchor,
+  tags,
+  label,
   onHover,
   onReady,
 }) => {
@@ -237,6 +399,7 @@ const GraphScene: React.FC<SceneProps> = ({
   const pitchRef = React.useRef(0);
   const frameRef = React.useRef(0);
   const readyRef = React.useRef(false);
+  const labelOffsets = React.useRef<Float32Array>(new Float32Array(labelledCount));
   const scratch = React.useMemo(() => ({ world: new THREE.Vector3(), view: new THREE.Vector3() }), []);
 
   const buffers = React.useMemo(() => createBuffers(selection, tokens), [selection, tokens]);
@@ -292,21 +455,33 @@ const GraphScene: React.FC<SceneProps> = ({
     const { current, target, lit, dim } = buffers;
     const hoveredIndex = hoveredRef.current;
     const neighbourhood = hoveredIndex == null ? null : selection.neighbours[hoveredIndex];
-
-    // Orbit and parallax.
-    const orbit = reducedMotion ? 0 : (state.clock.elapsedTime * Math.PI * 2) / orbitPeriodSeconds;
     const pointerState = pointer.current;
-    const wantYaw =
-      !reducedMotion && pointerState.inside
-        ? (pointerState.x / state.size.width - 0.5) * 2 * parallaxYaw
-        : 0;
-    const wantPitch =
-      !reducedMotion && pointerState.inside
-        ? (pointerState.y / state.size.height - 0.5) * 2 * parallaxPitch
-        : 0;
+    const spinState = spin.current;
+
+    // Spin. A drag writes the yaw itself; otherwise the rate coasts toward
+    // zero while the visitor is engaged (cursor over the graph, a finger
+    // down, or the resume delay still running) and eases back to the rest
+    // orbit after that. Reduced motion never orbits on its own.
+    if (!spinState.dragging) {
+      const now = performance.now();
+      const engaged =
+        spinState.pressed ||
+        (pointerState.inside && !pointerState.touch) ||
+        now - spinState.releasedAt < resumeDelaySeconds * 1000;
+      spinState.velocity =
+        reducedMotion || engaged
+          ? spinState.velocity * Math.exp(-momentumDecay * step)
+          : THREE.MathUtils.damp(spinState.velocity, autoSpinSpeed, resumeEase, step);
+      spinState.yaw += spinState.velocity * step;
+    }
+
+    // Parallax from the cursor, on top of the spin.
+    const parallax = !reducedMotion && pointerState.inside && !pointerState.touch;
+    const wantYaw = parallax ? (pointerState.x / state.size.width - 0.5) * 2 * parallaxYaw : 0;
+    const wantPitch = parallax ? (pointerState.y / state.size.height - 0.5) * 2 * parallaxPitch : 0;
     yawRef.current = THREE.MathUtils.damp(yawRef.current, wantYaw, parallaxEase, step);
     pitchRef.current = THREE.MathUtils.damp(pitchRef.current, wantPitch, parallaxEase, step);
-    group.rotation.set(pitchRef.current, orbit + yawRef.current, 0);
+    group.rotation.set(pitchRef.current, spinState.yaw + yawRef.current, 0);
     group.updateMatrixWorld();
 
     // Ease toward the worker's positions and ramp the hover state.
@@ -366,7 +541,8 @@ const GraphScene: React.FC<SceneProps> = ({
     buffers.lineLitAttribute.needsUpdate = true;
     buffers.lineDimAttribute.needsUpdate = true;
 
-    // Project every node for picking: screen x, y, and radius in CSS pixels.
+    // Project every node for picking and for the labels: screen x, y, and
+    // radius in CSS pixels.
     const camera = state.camera as THREE.PerspectiveCamera;
     const focalPx = state.size.height / 2 / Math.tan((camera.fov * Math.PI) / 360);
     const screenBuffer = screen.current;
@@ -387,32 +563,60 @@ const GraphScene: React.FC<SceneProps> = ({
       screenBuffer[base + 2] = (selection.radii[index] * focalPx) / depth;
     }
 
-    // The label follows the hovered node, above and to its right.
-    const anchor = labelAnchor.current;
-    if (anchor != null && hoveredIndex != null) {
-      const base = hoveredIndex * 3;
-      const radius = selection.radii[hoveredIndex];
-      scratch.world
-        .set(
-          current[base] * selection.scale,
-          current[base + 1] * selection.scale,
-          current[base + 2] * selection.scale,
-        )
-        .applyMatrix4(group.matrixWorld);
-      const toLeft = screen.current[base] > state.size.width / 2;
-      anchor.position.set(
-        scratch.world.x + radius * (toLeft ? -0.9 : 0.9),
-        scratch.world.y + radius * 0.9,
-        scratch.world.z,
+    // Labels. The hover label sits beside its node and nothing moves it.
+    // The labels at rest sit beside theirs, pushed clear of the accent discs,
+    // the hover label, and each other; they dim with their node and give way
+    // to the hover label when their node is the hovered one.
+    const width = state.size.width;
+    const height = state.size.height;
+    const anchorFor = (index: number, element: HTMLElement | null): LabelBox =>
+      anchorLabel(
+        screenBuffer[index * 3],
+        screenBuffer[index * 3 + 1],
+        screenBuffer[index * 3 + 2],
+        width / 2,
+        height / 2,
+        element?.offsetWidth ?? 0,
+        element?.offsetHeight ?? 0,
       );
+    const tagCount = Math.min(labelledCount, count);
+    const obstacles: LabelBox[] = [];
+    for (let index = 0; index < tagCount; index++) {
+      const base = index * 3;
+      obstacles.push(discBox(screenBuffer[base], screenBuffer[base + 1], screenBuffer[base + 2]));
+    }
+    const labelElement = label.current;
+    if (labelElement != null && hoveredIndex != null) {
+      const box = clampBox(anchorFor(hoveredIndex, labelElement), width, height);
+      obstacles.push(box);
+      placeBox(labelElement, box);
+    }
+    const tagElements = tags.current;
+    const boxes: LabelBox[] = [];
+    const nodeYs: number[] = [];
+    for (let index = 0; index < tagCount; index++) {
+      boxes.push(anchorFor(index, tagElements[index]));
+      nodeYs.push(screenBuffer[index * 3 + 1]);
+    }
+    const placed = layOutLabels(boxes, nodeYs, obstacles, width, height);
+    const offsetEase = frameRef.current === 0 ? 1 : 1 - Math.exp(-labelOffsetEase * step);
+    const smoothed = labelOffsets.current;
+    for (let index = 0; index < tagCount; index++) {
+      const element = tagElements[index];
+      if (element == null) continue;
+      smoothed[index] += (placed[index].top - boxes[index].top - smoothed[index]) * offsetEase;
+      const opacity = index === hoveredIndex ? 0 : 1 - dim[index] * (1 - dimmedOpacity);
+      element.style.opacity = opacity.toFixed(3);
+      placeBox(element, { ...placed[index], top: boxes[index].top + smoothed[index] });
     }
 
-    // Mouse hover resolves here, against this frame's projection.
-    if (!pointerState.touch) {
+    // Mouse hover resolves here, against this frame's projection. Not while
+    // a drag is in progress.
+    if (!pointerState.touch && !spinState.dragging) {
       const next = pointerState.inside ? pickNearest(screenBuffer, count, pointerState.x, pointerState.y) : null;
       if (next !== hoveredIndex) {
         hoveredRef.current = next;
-        onHover(next, sideFor(screenBuffer, next, state.size.width));
+        onHover(next);
       }
     }
 
@@ -448,15 +652,16 @@ const GraphScene: React.FC<SceneProps> = ({
 };
 
 // ---------------------------------------------------------------------------
-// The hover label: mono, next to the node, fades over the hover ramp.
+// The hover label: mono, under the node, fades over the hover ramp. Its
+// position is written by the frame loop like the labels at rest.
 
 interface LabelProps {
   node: GraphNode;
   copy: GraphCopy;
-  side: LabelSide;
+  ref: React.Ref<HTMLDivElement>;
 }
 
-const NodeLabel: React.FC<LabelProps> = ({ node, copy, side }) => {
+const NodeLabel: React.FC<LabelProps> = ({ node, copy, ref }) => {
   const facts = [
     node.language,
     `${node.commits} ${copy.commitsUnit}`,
@@ -465,14 +670,17 @@ const NodeLabel: React.FC<LabelProps> = ({ node, copy, side }) => {
   ].filter((fact): fact is string => fact != null);
 
   return (
-    <Html key={node.id} zIndexRange={[10, 0]} className="pointer-events-none">
-      <div className={side === "left" ? "graph-label graph-label-left" : "graph-label"}>
-        <span className="graph-label-name">{node.label}</span>
-        <span className="graph-label-facts">{facts.join(" · ")}</span>
-      </div>
-    </Html>
+    <div key={node.id} ref={ref} className="graph-label">
+      <span className="graph-label-name">{node.label}</span>
+      <span className="graph-label-facts">{facts.join(" · ")}</span>
+    </div>
   );
 };
+
+/** Writes a label box to its element. */
+function placeBox(element: HTMLElement, box: LabelBox): void {
+  element.style.transform = `translate3d(${box.left.toFixed(1)}px, ${box.top.toFixed(1)}px, 0)`;
+}
 
 // ---------------------------------------------------------------------------
 // Geometry and materials
@@ -588,10 +796,6 @@ function createBuffers(selection: GraphSelection, tokens: ColorTokens): SceneBuf
 
 function toVector(color: { r: number; g: number; b: number }): THREE.Vector3 {
   return new THREE.Vector3(color.r, color.g, color.b);
-}
-
-function sideFor(buffer: ScreenBuffer, index: number | null, width: number): LabelSide {
-  return index != null && buffer[index * 3] > width / 2 ? "left" : "right";
 }
 
 function pickNearest(buffer: ScreenBuffer, count: number, x: number, y: number): number | null {
