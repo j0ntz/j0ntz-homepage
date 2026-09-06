@@ -158,6 +158,48 @@ export interface LabelBox {
   height: number;
 }
 
+/** Something a label keeps off. A round obstacle is a disc: the collision
+ * test uses the circle inscribed in the box, so a label may sit in the
+ * corner of a big disc's bounding square. A soft obstacle (a neutral disc,
+ * small and unlabelled) may be covered at a cost when the alternative is a
+ * label far from its node; a hard one (an accent disc, a label, the hero's
+ * text) never is. */
+export interface Obstacle extends LabelBox {
+  round?: boolean;
+  soft?: boolean;
+}
+
+/** What covering one soft obstacle costs, in the same currency as the
+ * pixels a label is pushed from its node: the disc's diameter, up to one
+ * label height, so a label moves a line to clear a disc and no further and
+ * moves less for a smaller one. Covering a hard one costs
+ * more than any push inside a frame, so it happens only when every side
+ * of the node is taken, and then as little as possible. */
+export const softOverlapCostPx = labelFontPx * labelLineHeight;
+export const hardOverlapCostPx = 4096;
+
+/** A node that carries a label: its screen position and radius, and the
+ * measured size of the label. */
+export interface LabelSubject {
+  x: number;
+  y: number;
+  radius: number;
+  width: number;
+  height: number;
+}
+
+/** The farthest a label may be pushed from where it would sit beside its
+ * node before another side of the node is tried: a label that has moved
+ * further no longer reads as that node's name. About one and a half lines. */
+export const maxLabelShiftPx = 32;
+
+/** Where a label landed, and where it would have sat beside its node had
+ * nothing been in the way. Callers that animate ease between the two. */
+export interface LabelPlacement {
+  anchor: LabelBox;
+  box: LabelBox;
+}
+
 /** Puts a label box beside its node on the side facing away from the
  * graph's centre, so labels spread to the periphery: straight below a node
  * under the centre, to the right of a node right of it, and every direction
@@ -177,14 +219,46 @@ export function anchorLabel(
   const length = Math.hypot(dx, dy);
   const ux = length < 1e-6 ? 0 : dx / length;
   const uy = length < 1e-6 ? 1 : dy / length;
-  const reach = radius + labelGapPx;
-  return {
-    left: nodeX + ux * reach + ((ux - 1) * width) / 2,
-    top: nodeY + uy * reach + ((uy - 1) * height) / 2,
-    width,
-    height,
-  };
+  return anchorToward(nodeX, nodeY, radius, ux, uy, width, height);
 }
+
+/** A label box beside a node in the direction (ux, uy), a unit vector: the
+ * box is slid along that direction until no point of it is nearer the node's
+ * centre than the disc radius plus the gap. A wide box on a diagonal would
+ * otherwise reach back over the disc. */
+function anchorToward(
+  nodeX: number,
+  nodeY: number,
+  radius: number,
+  ux: number,
+  uy: number,
+  width: number,
+  height: number,
+): LabelBox {
+  const reach = radius + labelGapPx;
+  let left = nodeX + ux * reach + ((ux - 1) * width) / 2;
+  let top = nodeY + uy * reach + ((uy - 1) * height) / 2;
+  for (let pass = 0; pass < anchorPasses; pass++) {
+    const nearestX = Math.min(Math.max(left, nodeX), left + width);
+    const nearestY = Math.min(Math.max(top, nodeY), top + height);
+    const short = reach - Math.hypot(nearestX - nodeX, nearestY - nodeY);
+    if (short <= anchorTolerancePx) break;
+    left += ux * short;
+    top += uy * short;
+  }
+  return { left, top, width, height };
+}
+
+const anchorPasses = 4;
+const anchorTolerancePx = 0.5;
+
+/** The four sides tried, in turn, when the preferred side is taken. */
+const fallbackSides: ReadonlyArray<readonly [number, number]> = [
+  [0, 1],
+  [0, -1],
+  [1, 0],
+  [-1, 0],
+];
 
 function boxesOverlap(a: LabelBox, b: LabelBox): boolean {
   return (
@@ -193,6 +267,27 @@ function boxesOverlap(a: LabelBox, b: LabelBox): boolean {
     a.top < b.top + b.height &&
     b.top < a.top + a.height
   );
+}
+
+/** Whether a box meets an obstacle, the obstacle grown by `grow` pixels on
+ * every side. */
+function overlaps(box: LabelBox, obstacle: Obstacle, grow = 0): boolean {
+  if (obstacle.round !== true) {
+    return boxesOverlap(box, {
+      left: obstacle.left - grow,
+      top: obstacle.top - grow,
+      width: obstacle.width + grow * 2,
+      height: obstacle.height + grow * 2,
+    });
+  }
+  const radius = obstacle.width / 2 + grow;
+  const cx = obstacle.left + radius;
+  const cy = obstacle.top + obstacle.height / 2;
+  const nearestX = Math.min(Math.max(box.left, cx), box.left + box.width);
+  const nearestY = Math.min(Math.max(box.top, cy), box.top + box.height);
+  const dx = nearestX - cx;
+  const dy = nearestY - cy;
+  return dx * dx + dy * dy < radius * radius;
 }
 
 /** Slides a box inside a width by height frame, labelInsetPx from its edges. */
@@ -214,42 +309,134 @@ function inFrame(box: LabelBox, frameHeight: number): boolean {
   return box.top >= labelInsetPx && box.top + box.height <= frameHeight - labelInsetPx;
 }
 
-/** The square a disc occupies, as an obstacle labels keep off. */
-export function discBox(x: number, y: number, radius: number): LabelBox {
-  return { left: x - radius, top: y - radius, width: radius * 2, height: radius * 2 };
+/** The disc a node paints, as an obstacle labels keep off: hard for an
+ * accent node, soft for a neutral one. */
+export function discObstacle(x: number, y: number, radius: number, accent: boolean): Obstacle {
+  return {
+    left: x - radius,
+    top: y - radius,
+    width: radius * 2,
+    height: radius * 2,
+    round: true,
+    soft: !accent,
+  };
 }
 
-/** Final positions for the labels: each is slid inside the frame, then, in
- * order (the most active node first, so it stays put), pushed vertically
- * until it clears the obstacles and every label before it. A label at or
- * below its node moves down, one above moves up; when that direction runs
- * out of frame the label is pushed the other way from where it started. */
+/** Final positions for the labels, one per subject, in order (the most
+ * active node first, so it stays put). Each label is tried on the side of
+ * its node facing away from the centre, and below, above, right, and left
+ * of the node. On each side the box is slid inside the frame and tried as
+ * is, pushed vertically past the hard obstacles (every accent disc, its
+ * own included, the extra obstacles, and every label placed before it),
+ * and pushed past every obstacle; each option costs the pixels it moved
+ * from the anchor, plus up to softOverlapCostPx per neutral disc it covers
+ * and softOverlapCostPx per other accent disc it comes within the label gap of (a name touching
+ * another labelled disc reads as that disc's), plus hardOverlapCostPx per
+ * hard obstacle it still meets. The outward side wins when its
+ * best option costs no more than maxLabelShiftPx, since it moves smoothly
+ * as the graph turns; otherwise the cheapest option of any side, so a
+ * label always sits beside its node and never wanders across the graph. */
 export function layOutLabels(
-  boxes: LabelBox[],
-  nodeYs: number[],
-  obstacles: LabelBox[],
+  subjects: LabelSubject[],
+  centreX: number,
+  centreY: number,
+  discs: Obstacle[],
+  obstacles: Obstacle[],
   frameWidth: number,
   frameHeight: number,
-): LabelBox[] {
-  const placed: LabelBox[] = [...obstacles];
-  return boxes.map((rawBox, index) => {
-    const box = clampBox(rawBox, frameWidth, frameHeight);
-    const preferDown = box.top + box.height / 2 >= nodeYs[index];
-    const preferred = sweep(box, placed, preferDown);
-    const chosen = inFrame(preferred, frameHeight) ? preferred : sweep(box, placed, !preferDown);
-    const final = inFrame(chosen, frameHeight) ? chosen : clampBox(preferred, frameWidth, frameHeight);
-    placed.push(final);
-    return final;
+): LabelPlacement[] {
+  const placed: Obstacle[] = [...obstacles];
+  return subjects.map((subject, index) => {
+    const hardHit = (box: LabelBox): Obstacle | null =>
+      discs.find((disc) => disc.soft !== true && overlaps(box, disc)) ??
+      placed.find((other) => overlaps(box, other)) ??
+      null;
+    const anyHit = (box: LabelBox): Obstacle | null =>
+      discs.find((disc, discIndex) =>
+        overlaps(box, disc, disc.soft !== true && discIndex !== index ? labelGapPx : 0),
+      ) ??
+      placed.find((other) => overlaps(box, other)) ??
+      null;
+    const overlapCost = (box: LabelBox): number => {
+      let cost = 0;
+      discs.forEach((disc, discIndex) => {
+        if (disc.soft === true) {
+          if (overlaps(box, disc)) cost += Math.min(softOverlapCostPx, disc.height);
+        } else if (overlaps(box, disc)) {
+          cost += hardOverlapCostPx;
+        } else if (discIndex !== index && overlaps(box, disc, labelGapPx)) {
+          cost += softOverlapCostPx;
+        }
+      });
+      for (const other of placed) if (overlaps(box, other)) cost += hardOverlapCostPx;
+      return cost;
+    };
+    const maxPasses = discs.length + placed.length;
+    const preferred = anchorLabel(
+      subject.x,
+      subject.y,
+      subject.radius,
+      centreX,
+      centreY,
+      subject.width,
+      subject.height,
+    );
+    const sides: LabelBox[] = [preferred];
+    for (const [ux, uy] of fallbackSides) {
+      sides.push(
+        anchorToward(subject.x, subject.y, subject.radius, ux, uy, subject.width, subject.height),
+      );
+    }
+    let best: LabelBox | null = null;
+    let bestCost = Infinity;
+    for (const anchor of sides) {
+      const box = clampBox(anchor, frameWidth, frameHeight);
+      const preferDown = box.top + box.height / 2 >= subject.y;
+      const options = [
+        box,
+        sweep(box, hardHit, preferDown, maxPasses),
+        sweep(box, hardHit, !preferDown, maxPasses),
+        sweep(box, anyHit, preferDown, maxPasses),
+        sweep(box, anyHit, !preferDown, maxPasses),
+      ];
+      for (const option of options) {
+        if (option == null || !inFrame(option, frameHeight)) continue;
+        const cost =
+          Math.hypot(option.left - anchor.left, option.top - anchor.top) + overlapCost(option);
+        if (cost < bestCost) {
+          best = option;
+          bestCost = cost;
+        }
+      }
+      if (anchor === preferred && bestCost <= maxLabelShiftPx) break;
+    }
+    const box = best ?? clampBox(preferred, frameWidth, frameHeight);
+    placed.push(box);
+    return { anchor: preferred, box };
   });
 }
 
-/** Moves a box in one direction past every box it overlaps, in turn. */
-function sweep(box: LabelBox, placed: LabelBox[], down: boolean): LabelBox {
+/** Moves a box in one direction past every obstacle it meets, in turn, a
+ * hair beyond each so a touching edge never reads as a hit again. Null
+ * when the obstacle count's worth of passes still leaves it overlapping. */
+function sweep(
+  box: LabelBox,
+  firstHit: (box: LabelBox) => Obstacle | null,
+  down: boolean,
+  maxPasses: number,
+): LabelBox | null {
   let candidate = box;
-  for (let pass = 0; pass <= placed.length; pass++) {
-    const hit = placed.find((other) => boxesOverlap(candidate, other));
-    if (hit == null) break;
-    candidate = { ...candidate, top: down ? hit.top + hit.height : hit.top - candidate.height };
+  for (let pass = 0; pass <= maxPasses; pass++) {
+    const hit = firstHit(candidate);
+    if (hit == null) return candidate;
+    candidate = {
+      ...candidate,
+      top: down
+        ? hit.top + hit.height + sweepMarginPx
+        : hit.top - candidate.height - sweepMarginPx,
+    };
   }
-  return candidate;
+  return null;
 }
+
+const sweepMarginPx = 1;

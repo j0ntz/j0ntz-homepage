@@ -13,13 +13,11 @@ import * as THREE from "three";
 import { readColorTokens, type ColorTokens } from "@/lib/css-color";
 import {
   accentCount,
-  anchorLabel,
   autoSpinSpeed,
   baseFovDegrees,
   cameraDistance,
-  clampBox,
   dimmedOpacity,
-  discBox,
+  discObstacle,
   dragRadiansPerWidth,
   dragThresholdPx,
   edgeOpacity,
@@ -27,6 +25,7 @@ import {
   fovForAspect,
   haloScale,
   hoverSeconds,
+  labelInsetPx,
   labelledCount,
   layOutLabels,
   maxSpinSpeed,
@@ -36,6 +35,8 @@ import {
   resumeDelaySeconds,
   resumeEase,
   type LabelBox,
+  type LabelSubject,
+  type Obstacle,
 } from "@/lib/graph-scene";
 import type { GraphNode } from "@/lib/graph-types";
 import type {
@@ -43,7 +44,7 @@ import type {
   LayoutPositionsMessage,
 } from "@/workers/graph-layout.worker";
 
-import type { GraphCopy, GraphSelection } from "./RepoGraph";
+import type { CountUnit, GraphCopy, GraphSelection } from "./RepoGraph";
 
 // The live scene. Three draw calls: one instanced quad for every disc, one
 // line segment set for every edge, and the same quad again for the halos
@@ -52,7 +53,8 @@ import type { GraphCopy, GraphSelection } from "./RepoGraph";
 // eases toward them, turns the group for the spin and the parallax, ramps
 // the hover state, projects the nodes once per frame for picking, and lays
 // the DOM labels (the eight at rest, the hovered one) over the canvas at
-// the projected positions.
+// the projected positions, clear of every disc and of the hero's text
+// blocks (the elements marked data-graph-obstacle, measured on resize).
 //
 // Rotation is the one control. The rest orbit stops while the cursor is over
 // the graph, a drag turns the graph directly and a flick coasts out, and the
@@ -153,10 +155,48 @@ export const RepoGraphCanvas: React.FC<Props> = ({
   const hoveredRef = React.useRef<number | null>(null);
   const tags = React.useRef<TagElements>([]);
   const label = React.useRef<HTMLDivElement>(null);
+  const frame = React.useRef<HTMLDivElement>(null);
+  const overlay = React.useRef<Obstacle[]>([]);
 
   React.useEffect(() => {
     hoveredRef.current = hovered;
   }, [hovered]);
+
+  // The hero's text blocks as obstacles in canvas pixels, each grown by the
+  // label inset, kept only when it overlaps the canvas (on mobile the blocks
+  // sit above the graph in flow and none does). Measured now and again
+  // whenever the canvas or a block changes size, so a font swap or a
+  // viewport change moves the labels with it.
+  React.useEffect(() => {
+    const host = frame.current;
+    if (host == null) return;
+    const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-graph-obstacle]"));
+    const measure = (): void => {
+      const rect = host.getBoundingClientRect();
+      overlay.current = blocks.flatMap((block) => {
+        const bounds = block.getBoundingClientRect();
+        const box: Obstacle = {
+          left: bounds.left - rect.left - labelInsetPx,
+          top: bounds.top - rect.top - labelInsetPx,
+          width: bounds.width + labelInsetPx * 2,
+          height: bounds.height + labelInsetPx * 2,
+        };
+        const inside =
+          box.left < rect.width &&
+          box.left + box.width > 0 &&
+          box.top < rect.height &&
+          box.top + box.height > 0;
+        return inside ? [box] : [];
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(host);
+    for (const block of blocks) observer.observe(block);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const pick = (x: number, y: number): number | null =>
     pickNearest(screen.current, selection.nodes.length, x, y);
@@ -275,6 +315,7 @@ export const RepoGraphCanvas: React.FC<Props> = ({
 
   return (
     <div
+      ref={frame}
       className={
         dragging
           ? "relative h-full w-full cursor-grabbing touch-pan-y select-none"
@@ -303,6 +344,7 @@ export const RepoGraphCanvas: React.FC<Props> = ({
           pointer={pointer}
           spin={spin}
           screen={screen}
+          overlay={overlay}
           hovered={hovered}
           tags={tags}
           label={label}
@@ -355,6 +397,8 @@ interface SceneProps {
   pointer: React.RefObject<PointerState>;
   spin: React.RefObject<SpinState>;
   screen: React.RefObject<ScreenBuffer>;
+  /** The hero's text blocks in canvas pixels; see RepoGraphCanvas. */
+  overlay: React.RefObject<Obstacle[]>;
   hovered: number | null;
   tags: React.RefObject<TagElements>;
   label: React.RefObject<HTMLDivElement | null>;
@@ -387,6 +431,7 @@ const GraphScene: React.FC<SceneProps> = ({
   pointer,
   spin,
   screen,
+  overlay,
   hovered,
   tags,
   label,
@@ -399,7 +444,9 @@ const GraphScene: React.FC<SceneProps> = ({
   const pitchRef = React.useRef(0);
   const frameRef = React.useRef(0);
   const readyRef = React.useRef(false);
-  const labelOffsets = React.useRef<Float32Array>(new Float32Array(labelledCount));
+  /** Each label's eased displacement from its anchor, x then y. */
+  const labelOffsets = React.useRef<Float32Array>(new Float32Array(labelledCount * 2));
+  const hoverOffset = React.useRef<HoverOffset>({ index: null, x: 0, y: 0 });
   const scratch = React.useMemo(() => ({ world: new THREE.Vector3(), view: new THREE.Vector3() }), []);
 
   const buffers = React.useMemo(() => createBuffers(selection, tokens), [selection, tokens]);
@@ -563,51 +610,88 @@ const GraphScene: React.FC<SceneProps> = ({
       screenBuffer[base + 2] = (selection.radii[index] * focalPx) / depth;
     }
 
-    // Labels. The hover label sits beside its node and nothing moves it.
-    // The labels at rest sit beside theirs, pushed clear of the accent discs,
-    // the hover label, and each other; they dim with their node and give way
-    // to the hover label when their node is the hovered one.
+    // Labels. Every disc is an obstacle (a neutral one may be covered at a
+    // cost), as are the hero's text blocks and the hover label. The hover
+    // label sits beside its node clear of the text blocks (it may cover
+    // other discs: it is the thing being read).
+    // The labels at rest sit beside theirs clear of everything, dim with
+    // their node, and give way to the hover label when their node is the
+    // hovered one. A change of placement glides rather than jumps.
     const width = state.size.width;
     const height = state.size.height;
-    const anchorFor = (index: number, element: HTMLElement | null): LabelBox =>
-      anchorLabel(
-        screenBuffer[index * 3],
-        screenBuffer[index * 3 + 1],
-        screenBuffer[index * 3 + 2],
-        width / 2,
-        height / 2,
-        element?.offsetWidth ?? 0,
-        element?.offsetHeight ?? 0,
-      );
-    const tagCount = Math.min(labelledCount, count);
-    const obstacles: LabelBox[] = [];
-    for (let index = 0; index < tagCount; index++) {
+    const centreX = width / 2;
+    const centreY = height / 2;
+    const subjectFor = (index: number, element: HTMLElement | null): LabelSubject => ({
+      x: screenBuffer[index * 3],
+      y: screenBuffer[index * 3 + 1],
+      radius: screenBuffer[index * 3 + 2],
+      width: element?.offsetWidth ?? 0,
+      height: element?.offsetHeight ?? 0,
+    });
+    const discs: Obstacle[] = [];
+    for (let index = 0; index < count; index++) {
       const base = index * 3;
-      obstacles.push(discBox(screenBuffer[base], screenBuffer[base + 1], screenBuffer[base + 2]));
+      discs.push(
+        discObstacle(
+          screenBuffer[base],
+          screenBuffer[base + 1],
+          screenBuffer[base + 2],
+          index < accentCount,
+        ),
+      );
     }
+    const offsetEase = frameRef.current === 0 ? 1 : 1 - Math.exp(-labelOffsetEase * step);
+    const obstacles: Obstacle[] = [...overlay.current];
     const labelElement = label.current;
     if (labelElement != null && hoveredIndex != null) {
-      const box = clampBox(anchorFor(hoveredIndex, labelElement), width, height);
+      const [placement] = layOutLabels(
+        [subjectFor(hoveredIndex, labelElement)],
+        centreX,
+        centreY,
+        [],
+        overlay.current,
+        width,
+        height,
+      );
+      const offset = hoverOffset.current;
+      const fresh = offset.index !== hoveredIndex;
+      const targetX = placement.box.left - placement.anchor.left;
+      const targetY = placement.box.top - placement.anchor.top;
+      offset.index = hoveredIndex;
+      offset.x = fresh ? targetX : offset.x + (targetX - offset.x) * offsetEase;
+      offset.y = fresh ? targetY : offset.y + (targetY - offset.y) * offsetEase;
+      const box: LabelBox = {
+        ...placement.box,
+        left: placement.anchor.left + offset.x,
+        top: placement.anchor.top + offset.y,
+      };
       obstacles.push(box);
       placeBox(labelElement, box);
+    } else {
+      hoverOffset.current.index = null;
     }
+    const tagCount = Math.min(labelledCount, count);
     const tagElements = tags.current;
-    const boxes: LabelBox[] = [];
-    const nodeYs: number[] = [];
+    const subjects: LabelSubject[] = [];
     for (let index = 0; index < tagCount; index++) {
-      boxes.push(anchorFor(index, tagElements[index]));
-      nodeYs.push(screenBuffer[index * 3 + 1]);
+      subjects.push(subjectFor(index, tagElements[index]));
     }
-    const placed = layOutLabels(boxes, nodeYs, obstacles, width, height);
-    const offsetEase = frameRef.current === 0 ? 1 : 1 - Math.exp(-labelOffsetEase * step);
+    const placed = layOutLabels(subjects, centreX, centreY, discs, obstacles, width, height);
     const smoothed = labelOffsets.current;
     for (let index = 0; index < tagCount; index++) {
       const element = tagElements[index];
       if (element == null) continue;
-      smoothed[index] += (placed[index].top - boxes[index].top - smoothed[index]) * offsetEase;
+      const { anchor, box } = placed[index];
+      const at = index * 2;
+      smoothed[at] += (box.left - anchor.left - smoothed[at]) * offsetEase;
+      smoothed[at + 1] += (box.top - anchor.top - smoothed[at + 1]) * offsetEase;
       const opacity = index === hoveredIndex ? 0 : 1 - dim[index] * (1 - dimmedOpacity);
       element.style.opacity = opacity.toFixed(3);
-      placeBox(element, { ...placed[index], top: boxes[index].top + smoothed[index] });
+      placeBox(element, {
+        ...box,
+        left: anchor.left + smoothed[at],
+        top: anchor.top + smoothed[at + 1],
+      });
     }
 
     // Mouse hover resolves here, against this frame's projection. Not while
@@ -652,8 +736,10 @@ const GraphScene: React.FC<SceneProps> = ({
 };
 
 // ---------------------------------------------------------------------------
-// The hover label: mono, under the node, fades over the hover ramp. Its
-// position is written by the frame loop like the labels at rest.
+// The hover label: mono, beside the node, fades over the hover ramp. Its
+// position is written by the frame loop like the labels at rest. The facts
+// are one line where they fit and wrap between items where they do not; a
+// separator stays with the fact before it.
 
 interface LabelProps {
   node: GraphNode;
@@ -664,18 +750,41 @@ interface LabelProps {
 const NodeLabel: React.FC<LabelProps> = ({ node, copy, ref }) => {
   const facts = [
     node.language,
-    `${node.commits} ${copy.commitsUnit}`,
-    node.stars > 0 ? `${node.stars} ${copy.starsUnit}` : null,
+    withUnit(node.commits, copy.commitsUnit),
+    node.stars > 0 ? withUnit(node.stars, copy.starsUnit) : null,
     node.firstActivity != null ? `${copy.sincePrefix} ${node.firstActivity.slice(0, 4)}` : null,
   ].filter((fact): fact is string => fact != null);
 
   return (
     <div key={node.id} ref={ref} className="graph-label">
       <span className="graph-label-name">{node.label}</span>
-      <span className="graph-label-facts">{facts.join(" · ")}</span>
+      <span className="graph-label-facts">
+        {facts.map((fact, index) => (
+          <React.Fragment key={fact}>
+            {index > 0 ? " " : null}
+            <span className="graph-label-fact">
+              {index < facts.length - 1 ? `${fact}\u00a0${factSeparator}` : fact}
+            </span>
+          </React.Fragment>
+        ))}
+      </span>
     </div>
   );
 };
+
+const factSeparator = "\u00b7";
+
+/** A count with its unit, singular for one. */
+function withUnit(count: number, unit: CountUnit): string {
+  return `${count} ${count === 1 ? unit.one : unit.other}`;
+}
+
+/** The eased displacement of the hover label, reset when the node changes. */
+interface HoverOffset {
+  index: number | null;
+  x: number;
+  y: number;
+}
 
 /** Writes a label box to its element. */
 function placeBox(element: HTMLElement, box: LabelBox): void {

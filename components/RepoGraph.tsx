@@ -13,9 +13,15 @@ import type { GraphData, GraphEdge, GraphNode } from "@/lib/graph-types";
 // and swaps the snapshot for the live scene the moment the scene has drawn
 // its first frame at the same positions. No WebGL: the snapshot stays.
 
+/** A unit with its singular, so a count of one reads "1 star". */
+export interface CountUnit {
+  one: string;
+  other: string;
+}
+
 export interface GraphCopy {
-  commitsUnit: string;
-  starsUnit: string;
+  commitsUnit: CountUnit;
+  starsUnit: CountUnit;
   sincePrefix: string;
 }
 

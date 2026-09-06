@@ -2,8 +2,7 @@ import * as React from "react";
 
 import {
   accentCount,
-  anchorLabel,
-  discBox,
+  discObstacle,
   edgeOpacity,
   haloScale,
   labelFontPx,
@@ -13,6 +12,7 @@ import {
   monoAdvanceEm,
   nodeRadius,
   projectAtRest,
+  type LabelSubject,
   type ProjectedNode,
 } from "@/lib/graph-scene";
 import type { GraphEdge, GraphLayout, GraphNode } from "@/lib/graph-types";
@@ -24,8 +24,8 @@ import type { GraphEdge, GraphLayout, GraphNode } from "@/lib/graph-types";
 // their label at rest as HTML over the SVG, in the mono face at a real pixel
 // size (SVG text would scale with the viewport), placed by the rule the live
 // scene applies per frame: beside the node on the side away from the centre,
-// pushed clear of the other labels, kept inside the square. Colors are the
-// tokens by name; the file has no literal.
+// pushed clear of every disc and of the other labels, kept inside the
+// square. Colors are the tokens by name; the file has no literal.
 
 interface Props {
   nodes: GraphNode[];
@@ -73,7 +73,7 @@ export const GraphSnapshot: React.FC<Props> = ({
     .map((entry) => entry.index);
   const gradientId = `graph-glow-${id}`;
   const labelled = nodes.slice(0, labelledCount);
-  const tagStyles = layOutTags(labelled, projected, squarePx);
+  const tagStyles = layOutTags(nodes, projected, squarePx);
 
   return (
     <div className={className == null ? "graph-frame" : `graph-frame ${className}`}>
@@ -149,12 +149,13 @@ export const GraphSnapshot: React.FC<Props> = ({
 
 /** Where the labels at rest sit, as CSS the server can emit: the shared
  * placement run at the nominal square size with the label boxes estimated
- * from the mono face (a monospace label is its character count wide), then
- * expressed in percent of the square. The clamp keeps a label inside the
- * square at every real size; the live scene's frame loop runs the same
- * placement in pixels, so the swap keeps every label in place. */
+ * from the mono face (a monospace label is its character count wide) and
+ * every disc as an obstacle, then expressed in percent of the square. The
+ * clamp keeps a label inside the square at every real size; the live
+ * scene's frame loop runs the same placement in pixels, so the swap keeps
+ * every label in place. */
 function layOutTags(
-  labelled: GraphNode[],
+  nodes: GraphNode[],
   projected: ProjectedNode[],
   squarePx: number,
 ): React.CSSProperties[] {
@@ -162,18 +163,19 @@ function layOutTags(
   const height = labelFontPx * labelLineHeight;
   const centre = squarePx / 2;
   const radiusPx = (point: ProjectedNode): number => (point.radius / 2) * squarePx;
-  const boxes = labelled.map((node, index) => {
-    const point = projected[index];
-    const width = node.label.length * monoAdvanceEm * labelFontPx;
-    return anchorLabel(toPx(point.x), toPx(point.y), radiusPx(point), centre, centre, width, height);
-  });
-  const nodeYs = labelled.map((_, index) => toPx(projected[index].y));
-  const discs = labelled.map((_, index) => {
-    const point = projected[index];
-    return discBox(toPx(point.x), toPx(point.y), radiusPx(point));
-  });
-  const placed = layOutLabels(boxes, nodeYs, discs, squarePx, squarePx);
-  return placed.map((box, index) => {
+  const labelled = nodes.slice(0, labelledCount);
+  const subjects: LabelSubject[] = labelled.map((node, index) => ({
+    x: toPx(projected[index].x),
+    y: toPx(projected[index].y),
+    radius: radiusPx(projected[index]),
+    width: node.label.length * monoAdvanceEm * labelFontPx,
+    height,
+  }));
+  const discs = projected.map((point, index) =>
+    discObstacle(toPx(point.x), toPx(point.y), radiusPx(point), index < accentCount),
+  );
+  const placed = layOutLabels(subjects, centre, centre, discs, [], squarePx, squarePx);
+  return placed.map(({ box }, index) => {
     const chars = labelled[index].label.length;
     const left = ((box.left / squarePx) * 100).toFixed(2);
     const top = ((box.top / squarePx) * 100).toFixed(2);

@@ -16,7 +16,9 @@ import { isGraphData, type GraphData, type GraphNode } from "@/lib/graph-types";
 // bottom-left. Mobile (below 768px): the name block first with nothing
 // behind it, then the graph as its own full-width square. The graph is
 // server-rendered as SVG so it is in the first painted frame; the live
-// scene takes over on the client. Zones 2 and 3 are stubs here.
+// scene takes over on the client. The hero's text blocks carry
+// data-graph-obstacle so the scene keeps its labels off them. Zones 2 and 3
+// are stubs here.
 
 const graph = loadGraph(graphJson);
 const maxCommits = Math.max(1, ...graph.nodes.map((node) => node.commits));
@@ -29,7 +31,7 @@ const Home: React.FC = () => {
       <section className="hero" aria-labelledby="site-name">
         <div className="hero-overlay pointer-events-none flex flex-col justify-between gap-[calc(var(--rhythm)*2)] px-3 py-[calc(var(--rhythm)*2)] md:px-10">
           <div className="flex flex-col gap-rhythm md:flex-row md:items-start md:justify-between">
-            <div className="max-w-[34ch]">
+            <div className="max-w-[34ch]" data-graph-obstacle="">
               <h1
                 id="site-name"
                 className="font-display text-step-6 leading-none font-bold tracking-display text-foreground"
@@ -38,10 +40,10 @@ const Home: React.FC = () => {
               </h1>
               <p className="mt-rhythm text-step-1 text-foreground">{site.line}</p>
             </div>
-            <ContactLinks className="flex flex-col gap-2 md:flex-row md:gap-6" />
+            <ContactLinks className="flex flex-col gap-2 md:flex-row md:gap-6" graphObstacle />
           </div>
           <div>
-            <a className="cta pointer-events-auto" href={site.cta.href}>
+            <a className="cta pointer-events-auto" href={site.cta.href} data-graph-obstacle="">
               {site.cta.label}
             </a>
           </div>
@@ -107,11 +109,13 @@ export default Home;
 
 interface ContactLinksProps {
   className: string;
+  /** The block sits over the graph: the scene keeps its labels off it. */
+  graphObstacle?: boolean;
 }
 
-const ContactLinks: React.FC<ContactLinksProps> = ({ className }) => {
+const ContactLinks: React.FC<ContactLinksProps> = ({ className, graphObstacle = false }) => {
   return (
-    <nav aria-label="Contact">
+    <nav aria-label="Contact" data-graph-obstacle={graphObstacle ? "" : undefined}>
       <ul className={className}>
         {site.links.map((link) => {
           const external = link.href.startsWith("http");

@@ -10,8 +10,8 @@
   "cta": { "label": "See the work", "href": "#work" },
   "graph": {
     "ariaLabel": "Jon's public repos and projects, sized by commits in the last two years",
-    "commitsUnit": "commits",
-    "starsUnit": "stars",
+    "commitsUnit": { "one": "commit", "other": "commits" },
+    "starsUnit": { "one": "star", "other": "stars" },
     "sincePrefix": "since"
   },
   "sections": {
