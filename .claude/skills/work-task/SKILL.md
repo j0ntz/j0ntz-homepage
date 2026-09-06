@@ -24,7 +24,7 @@ Sub-issue role: `bash $ORCH_DIR/board.sh gate <n>` prints `none` (normal task) o
 </step>
 
 <step id="2-initial" name="INITIAL: do the work by flavor">
-- **code** (no flavor): implement to the issue's definition of done following CLAUDE.md; `git commit`; `$ORCH_BUILD_CMD` (sfw if needed) MUST pass; push; open a PR (`gh pr create --repo $ORCH_REPO --base main --head ${ORCH_BRANCH_PREFIX}<n> --title "<concise>" --body-file <file>` whose body starts with `Closes #<n>`).
+- **code** (no flavor): implement to the issue's definition of done following CLAUDE.md; `git commit`; `$ORCH_BUILD_CMD` (sfw if needed) MUST pass, and on a mobile site the local run CLAUDE.md prescribes (`verify-android.sh local`) MUST pass too; push; open a PR (`gh pr create --repo $ORCH_REPO --base main --head ${ORCH_BRANCH_PREFIX}<n> --title "<concise>" --body-file <file>` whose body starts with `Closes #<n>`).
 - **doc** (`research`/`design`/`instructions`): research (web and codebase) and write the deliverable doc(s) under `docs/` per the issue's deliverables; `git commit`; push; open a PR.
 - **ops/`chore`** that operates on the board (no artifact of its own): do the operational work directly per the issue. Do NOT open a PR for THIS task. A research-only investigation: post the findings as an issue comment starting with `<!-- orch -->`; no PR.
 </step>

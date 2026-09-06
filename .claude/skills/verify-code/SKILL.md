@@ -21,7 +21,7 @@ Parse `<n>`. `pr=$(gh pr list --repo $ORCH_REPO --head ${ORCH_BRANCH_PREFIX}<n> 
 </step>
 
 <step id="2" name="Preview-test">
-`bash $ORCH_DIR/verify-preview.sh <pr> "<expected-substring>"` (a string that proves the change rendered; includes the mobile capture). `RESULT=fail` because the CODE is wrong is a change request. A transient deploy hiccup: retry once or twice. Note the `SCREENSHOT=` paths.
+`bash $ORCH_DIR/verify-preview.sh <pr> "<expected-substring>"` (a string that proves the change rendered; includes the mobile capture). A mobile site (`verify.kind` = mobile in orch.config.json) has no preview URL: the same command runs the Android pipeline and prints `FINGERPRINT=`, `APK=`, `MAESTRO=` and a `SCREENSHOT=` per flow under the same `RESULT=` contract. `RESULT=fail` because the CODE is wrong is a change request. A transient deploy hiccup: retry once or twice. Note the `SCREENSHOT=` paths.
 </step>
 
 <step id="3" name="Cold review">
@@ -30,6 +30,6 @@ Review the diff for correctness and logic, security, the repo's TypeScript stand
 
 <step id="4" name="Post and route (binary)">
 - **Any change requests**: post ONE formal review via the reviews API: `gh api -X POST repos/$ORCH_REPO/pulls/<pr>/reviews --input <payload.json>` with `{ "event":"COMMENT", "body":"<!-- review-task --> CHANGES REQUESTED (<k>)", "comments":[{"path":...,"line":...,"side":"RIGHT","body":"<what, why, fix>"}, ...] }` (build the payload with the editor, not a heredoc). Then `bash $ORCH_DIR/board.sh status <n> Pending`.
-- **Clean**: write the run report by filling `$ORCH_DIR/templates/run-report.md` into `docs/run-reports/issue-<n>-<slug>.md`, commit the screenshots under `docs/screenshots/`, push, and post the report on the issue (lead with the live preview URL). Then `bash $ORCH_DIR/board.sh status <n> Verified`.
+- **Clean**: write the run report by filling `$ORCH_DIR/templates/run-report.md` into `docs/run-reports/issue-<n>-<slug>.md`, commit the screenshots under `docs/screenshots/`, push, and post the report on the issue (lead with the live preview URL, or with the screenshots for a mobile site). Then `bash $ORCH_DIR/board.sh status <n> Verified`.
 Print a one-line summary (issue, PR, verdict, next state), then stop.
 </step>
