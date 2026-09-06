@@ -24,7 +24,7 @@ Parse `<n>`. `pr=$(gh pr list --repo $ORCH_REPO --head ${ORCH_BRANCH_PREFIX}<n> 
 </step>
 
 <step id="3" name="Cold review">
-Review the diff for correctness and logic, security, the repo's TypeScript standards, its design-system rules, and spec adherence (does it do what issue #<n> asked?). Each finding worth a code change is a CHANGE REQUEST anchored to file:line; do not invent findings.
+Run `/design-check` on the files the PR touches first; every finding it reports (mechanical or judgment) is a change request. Then review the diff for correctness and logic, security, the repo's TypeScript standards, its design-system rules, and spec adherence (does it do what issue #<n> asked?). Each finding worth a code change is a CHANGE REQUEST anchored to file:line; do not invent findings.
 </step>
 
 <step id="4" name="Post and route (binary)">

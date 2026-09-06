@@ -90,3 +90,10 @@ Written down so no task has to guess. A pull request that reintroduces any of th
 - Fade-in on every element, scroll-triggered reveals, anything that snaps.
 - A resume link or PDF.
 - Any word from `docs/data-banned-words.txt`, and any headline that could be another engineer's.
+
+## Enforcement
+
+Two layers, and a pull request has to clear both.
+
+- `scripts/design-check.mjs` (the `design-check` package script, run by `prebuild` so every build runs it) is the mechanical layer. It scans the working tree, or the files it is given, and exits 1 with `file:line` findings on the forbidden font families, any color literal outside `app/globals.css`, purple, violet, or indigo by name or by hue (250 to 290), pure black or white backgrounds, `rounded-2xl`, `shadow-lg`, `backdrop-blur`, the gradient utilities, the Tailwind palette utilities, and any entry in `docs/data-banned-words.txt` inside `app/`, `components/`, or `content/`. It has no dependencies. `docs/` and `.claude/` are outside its scan because they quote the forbidden list on purpose.
+- `/design-check` (`.claude/skills/design-check/SKILL.md`) is the judgment layer. It runs the script, reads this file, and reviews the code for what a regex cannot catch: card rows, badges over headings, stat banners, scroll-triggered motion, sizes off the scale, copy that could be any engineer's. The verify-code agent runs it before its cold review, and each of its findings is a change request.
