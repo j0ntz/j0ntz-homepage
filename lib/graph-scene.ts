@@ -290,23 +290,32 @@ function overlaps(box: LabelBox, obstacle: Obstacle, grow = 0): boolean {
   return dx * dx + dy * dy < radius * radius;
 }
 
-/** Slides a box inside a width by height frame, labelInsetPx from its edges. */
-export function clampBox(box: LabelBox, frameWidth: number, frameHeight: number): LabelBox {
+/** Slides a box inside a frame, labelInsetPx from its edges. The frame is
+ * the part of the canvas a visitor can see, in canvas pixels: the whole
+ * canvas for the snapshot and the mobile square, and on desktop the part
+ * left inside the hero once the canvas is shifted right, since the hero
+ * clips whatever crosses its edge. */
+export function clampBox(box: LabelBox, frame: LabelBox): LabelBox {
+  const minLeft = frame.left + labelInsetPx;
+  const minTop = frame.top + labelInsetPx;
   return {
     ...box,
     left: Math.min(
-      Math.max(labelInsetPx, box.left),
-      Math.max(labelInsetPx, frameWidth - labelInsetPx - box.width),
+      Math.max(minLeft, box.left),
+      Math.max(minLeft, frame.left + frame.width - labelInsetPx - box.width),
     ),
     top: Math.min(
-      Math.max(labelInsetPx, box.top),
-      Math.max(labelInsetPx, frameHeight - labelInsetPx - box.height),
+      Math.max(minTop, box.top),
+      Math.max(minTop, frame.top + frame.height - labelInsetPx - box.height),
     ),
   };
 }
 
-function inFrame(box: LabelBox, frameHeight: number): boolean {
-  return box.top >= labelInsetPx && box.top + box.height <= frameHeight - labelInsetPx;
+function inFrame(box: LabelBox, frame: LabelBox): boolean {
+  return (
+    box.top >= frame.top + labelInsetPx &&
+    box.top + box.height <= frame.top + frame.height - labelInsetPx
+  );
 }
 
 /** The disc a node paints, as an obstacle labels keep off: hard for an
@@ -342,8 +351,7 @@ export function layOutLabels(
   centreY: number,
   discs: Obstacle[],
   obstacles: Obstacle[],
-  frameWidth: number,
-  frameHeight: number,
+  frame: LabelBox,
 ): LabelPlacement[] {
   const placed: Obstacle[] = [...obstacles];
   return subjects.map((subject, index) => {
@@ -390,7 +398,7 @@ export function layOutLabels(
     let best: LabelBox | null = null;
     let bestCost = Infinity;
     for (const anchor of sides) {
-      const box = clampBox(anchor, frameWidth, frameHeight);
+      const box = clampBox(anchor, frame);
       const preferDown = box.top + box.height / 2 >= subject.y;
       const options = [
         box,
@@ -400,7 +408,7 @@ export function layOutLabels(
         sweep(box, anyHit, !preferDown, maxPasses),
       ];
       for (const option of options) {
-        if (option == null || !inFrame(option, frameHeight)) continue;
+        if (option == null || !inFrame(option, frame)) continue;
         const cost =
           Math.hypot(option.left - anchor.left, option.top - anchor.top) + overlapCost(option);
         if (cost < bestCost) {
@@ -410,7 +418,7 @@ export function layOutLabels(
       }
       if (anchor === preferred && bestCost <= maxLabelShiftPx) break;
     }
-    const box = best ?? clampBox(preferred, frameWidth, frameHeight);
+    const box = best ?? clampBox(preferred, frame);
     placed.push(box);
     return { anchor: preferred, box };
   });

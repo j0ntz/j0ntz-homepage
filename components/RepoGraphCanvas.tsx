@@ -157,6 +157,7 @@ export const RepoGraphCanvas: React.FC<Props> = ({
   const label = React.useRef<HTMLDivElement>(null);
   const frame = React.useRef<HTMLDivElement>(null);
   const overlay = React.useRef<Obstacle[]>([]);
+  const visible = React.useRef<LabelBox | null>(null);
 
   React.useEffect(() => {
     hoveredRef.current = hovered;
@@ -164,15 +165,20 @@ export const RepoGraphCanvas: React.FC<Props> = ({
 
   // The hero's text blocks as obstacles in canvas pixels, each grown by the
   // label inset, kept only when it overlaps the canvas (on mobile the blocks
-  // sit above the graph in flow and none does). Measured now and again
-  // whenever the canvas or a block changes size, so a font swap or a
-  // viewport change moves the labels with it.
+  // sit above the graph in flow and none does), and the visible frame: the
+  // part of the canvas inside the nearest ancestor that clips its overflow.
+  // On desktop the canvas is shifted right by --graph-shift inside the
+  // hero, which clips it, so a label placed in the strip past the hero's
+  // edge would be cut off; the labels are kept inside the frame instead.
+  // Measured now and again whenever the canvas or a block changes size, so
+  // a font swap or a viewport change moves the labels with it.
   React.useEffect(() => {
     const host = frame.current;
     if (host == null) return;
     const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-graph-obstacle]"));
     const measure = (): void => {
       const rect = host.getBoundingClientRect();
+      visible.current = visibleFrame(host, rect);
       overlay.current = blocks.flatMap((block) => {
         const bounds = block.getBoundingClientRect();
         const box: Obstacle = {
@@ -345,6 +351,7 @@ export const RepoGraphCanvas: React.FC<Props> = ({
           spin={spin}
           screen={screen}
           overlay={overlay}
+          visible={visible}
           hovered={hovered}
           tags={tags}
           label={label}
@@ -399,6 +406,8 @@ interface SceneProps {
   screen: React.RefObject<ScreenBuffer>;
   /** The hero's text blocks in canvas pixels; see RepoGraphCanvas. */
   overlay: React.RefObject<Obstacle[]>;
+  /** The visible part of the canvas, in canvas pixels; null until measured. */
+  visible: React.RefObject<LabelBox | null>;
   hovered: number | null;
   tags: React.RefObject<TagElements>;
   label: React.RefObject<HTMLDivElement | null>;
@@ -432,6 +441,7 @@ const GraphScene: React.FC<SceneProps> = ({
   spin,
   screen,
   overlay,
+  visible,
   hovered,
   tags,
   label,
@@ -621,6 +631,7 @@ const GraphScene: React.FC<SceneProps> = ({
     const height = state.size.height;
     const centreX = width / 2;
     const centreY = height / 2;
+    const labelFrame = visible.current ?? { left: 0, top: 0, width, height };
     const subjectFor = (index: number, element: HTMLElement | null): LabelSubject => ({
       x: screenBuffer[index * 3],
       y: screenBuffer[index * 3 + 1],
@@ -650,8 +661,7 @@ const GraphScene: React.FC<SceneProps> = ({
         centreY,
         [],
         overlay.current,
-        width,
-        height,
+        labelFrame,
       );
       const offset = hoverOffset.current;
       const fresh = offset.index !== hoveredIndex;
@@ -676,7 +686,7 @@ const GraphScene: React.FC<SceneProps> = ({
     for (let index = 0; index < tagCount; index++) {
       subjects.push(subjectFor(index, tagElements[index]));
     }
-    const placed = layOutLabels(subjects, centreX, centreY, discs, obstacles, width, height);
+    const placed = layOutLabels(subjects, centreX, centreY, discs, obstacles, labelFrame);
     const smoothed = labelOffsets.current;
     for (let index = 0; index < tagCount; index++) {
       const element = tagElements[index];
@@ -784,6 +794,28 @@ interface HoverOffset {
   index: number | null;
   x: number;
   y: number;
+}
+
+/** The part of the canvas a visitor can see, in canvas pixels: its rect cut
+ * to the nearest ancestor that clips its overflow (the hero on desktop,
+ * where the canvas is shifted right past the hero's edge; the square
+ * itself on mobile). The whole canvas when no ancestor clips. */
+function visibleFrame(host: HTMLElement, rect: DOMRect): LabelBox {
+  let clipper: HTMLElement | null = host.parentElement;
+  while (clipper != null && clipper !== document.body) {
+    const style = getComputedStyle(clipper);
+    if (style.overflowX !== "visible" || style.overflowY !== "visible") break;
+    clipper = clipper.parentElement;
+  }
+  if (clipper == null || clipper === document.body) {
+    return { left: 0, top: 0, width: rect.width, height: rect.height };
+  }
+  const clip = clipper.getBoundingClientRect();
+  const left = Math.max(0, clip.left - rect.left);
+  const top = Math.max(0, clip.top - rect.top);
+  const right = Math.min(rect.width, clip.right - rect.left);
+  const bottom = Math.min(rect.height, clip.bottom - rect.top);
+  return { left, top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
 }
 
 /** Writes a label box to its element. */

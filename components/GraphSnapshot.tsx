@@ -174,7 +174,8 @@ function layOutTags(
   const discs = projected.map((point, index) =>
     discObstacle(toPx(point.x), toPx(point.y), radiusPx(point), index < accentCount),
   );
-  const placed = layOutLabels(subjects, centre, centre, discs, [], squarePx, squarePx);
+  const frame = { left: 0, top: 0, width: squarePx, height: squarePx };
+  const placed = layOutLabels(subjects, centre, centre, discs, [], frame);
   return placed.map(({ box }, index) => {
     const chars = labelled[index].label.length;
     const left = ((box.left / squarePx) * 100).toFixed(2);
