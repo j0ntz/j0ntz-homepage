@@ -13,11 +13,12 @@ description: Independently verify ONE Verifying code task (preview-test on its l
 <rule id="binary-verdict">A finding is either a CHANGE REQUEST (worth a code change before land) or you do not raise it. No nit tier.</rule>
 <rule id="self-review-limit">Same-account PR, so GitHub forbids a formal APPROVE/REQUEST_CHANGES (422); submit the review with `event=COMMENT`. Routing is driven by whether you filed change-request threads.</rule>
 <rule id="feedback-comments">ANY issue comment not starting with `<!--` is human feedback; it is consumed only when it carries the orch's +1 reaction. An unconsumed one the work did not act on is a change request. When directives conflict, the newest wins.</rule>
+<rule id="no-truncated-reads">The shell tool shows at most ~20 KB of a command's output; anything longer is replaced by a 2 KB preview plus a file path. A spec read from a preview is a truncated spec. Every spec-bearing read (issue body, issue comments, PR diff, review threads) is written to a file under `/tmp/orch-$ORCH_SLUG-<n>/` and read with the Read tool, paged when long; `gh api` list reads take `--paginate`. Never reason from a preview.</rule>
 <rule id="orch-comment-marker">EVERY issue comment you post MUST start with an HTML marker (`<!-- orch -->` or a specific one); unmarked comments are reserved for the human.</rule>
 </rules>
 
 <step id="1" name="Read and resolve the PR">
-Parse `<n>`. `pr=$(gh pr list --repo $ORCH_REPO --head ${ORCH_BRANCH_PREFIX}<n> --state open --json number -q '.[0].number')`. If empty: `/validate-block`, then add `blocked`. Read `gh issue view <n> --repo $ORCH_REPO` (the requirement) and `gh pr diff <pr> --repo $ORCH_REPO`. Load the repo CLAUDE.md standards.
+Parse `<n>`. `pr=$(gh pr list --repo $ORCH_REPO --head ${ORCH_BRANCH_PREFIX}<n> --state open --json number -q '.[0].number')`. If empty: `/validate-block`, then add `blocked`. `D=/tmp/orch-$ORCH_SLUG-<n>; mkdir -p $D; gh issue view <n> --repo $ORCH_REPO --json body -q .body > $D/issue.md; gh api repos/$ORCH_REPO/issues/<n>/comments --paginate > $D/comments.json; gh pr diff <pr> --repo $ORCH_REPO > $D/pr.diff; gh pr diff <pr> --repo $ORCH_REPO --name-only > $D/pr-files.txt`, then READ the issue, the comments, and the diff with the Read tool, the diff file by file when it is long (see `no-truncated-reads`). Load the repo CLAUDE.md standards.
 </step>
 
 <step id="2" name="Preview-test">
