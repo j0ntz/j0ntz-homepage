@@ -32,6 +32,9 @@
   /* Space: 8px base unit, all vertical spacing a multiple of 24px. */
   --space-base: 8px;
   --rhythm: 24px;
+
+  /* Graph: how far right of centre the hero graph sits on desktop. */
+  --graph-shift: 16%;
 }
 
 /*
@@ -103,4 +106,116 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/*
+ * Hero and graph. Class names rather than long utility strings where a rule
+ * needs a token in a place Tailwind cannot reach (SVG gradient stops, the
+ * glow shadow, the mobile square). Every value is a token from :root above.
+ */
+@layer components {
+  .hero {
+    height: calc(100dvh - var(--rhythm) * 3);
+    min-height: 560px;
+  }
+
+  /* Mobile: a square behind the name. Desktop: full bleed, its visual mass
+     pushed right of the text by --graph-shift of the viewport width. */
+  .hero-graph {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    aspect-ratio: 1;
+  }
+
+  @media (min-width: 768px) {
+    .hero-graph {
+      inset: 0;
+      width: auto;
+      aspect-ratio: auto;
+      transform: translateX(var(--graph-shift));
+    }
+  }
+
+  .hero-link {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-color: var(--foreground-muted);
+    transition:
+      color 150ms ease,
+      text-decoration-color 150ms ease;
+  }
+
+  .hero-link:hover {
+    color: var(--accent);
+    text-decoration-color: var(--accent);
+  }
+
+  .cta {
+    display: inline-block;
+    padding: calc(var(--space-base) * 1.5) calc(var(--space-base) * 3);
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--ground);
+    font-weight: 500;
+    box-shadow: 0 0 16px var(--glow);
+    transition: box-shadow 200ms ease;
+  }
+
+  .cta:hover {
+    box-shadow: 0 0 40px var(--glow);
+  }
+
+  .cta:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* The radial glow behind an accent node in the SVG snapshot: the glow
+     token at the disc edge, gone at the halo edge. */
+  .graph-glow-stop {
+    stop-color: var(--glow);
+  }
+
+  .graph-glow-stop-end {
+    stop-color: var(--accent);
+    stop-opacity: 0;
+  }
+
+  /* Hover label in the live scene, anchored above and right of the node. */
+  .graph-label {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(-100%);
+    padding-bottom: var(--space-base);
+    font-family: var(--font-mono);
+    font-size: var(--step-0);
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    color: var(--foreground);
+    animation: graph-label-in 150ms ease-out both;
+  }
+
+  .graph-label-left {
+    align-items: flex-end;
+    transform: translate(-100%, -100%);
+  }
+
+  .graph-label-facts {
+    color: var(--foreground-muted);
+  }
+
+  @keyframes graph-label-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
