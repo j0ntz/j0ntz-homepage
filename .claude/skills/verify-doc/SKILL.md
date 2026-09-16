@@ -6,7 +6,7 @@ description: Independently verify ONE Verifying doc or ops task (completeness an
 <goal>Verify ONE doc or ops task (the GitHub issue passed as `/verify-doc <issue-url>`) COLD. For a doc: does it deliver what the issue asked, are claims and links sound, is it internally consistent and standards-clean. For an ops task: was the operational goal actually met. Binary verdict: change requests route to Pending; clean with an open PR routes to Verified; clean with no PR routes to Done. You CHECK, you do NOT fix.</goal>
 
 <rules>
-<rule id="site-env">Site values come from the `ORCH_*` env (`$ORCH_REPO`, `$ORCH_BRANCH_PREFIX`, `$ORCH_DIR`, `$ORCH_BUILD_CMD`). If `$ORCH_REPO` is empty, run `eval "$(bash ~/git/site-orch/env.sh)"` from the repo root first.</rule>
+<rule id="tenant-env">Tenant values come from the `ORCH_*` env (`$ORCH_REPO`, `$ORCH_BRANCH_PREFIX`, `$ORCH_DIR`, `$ORCH_BUILD_CMD`). If `$ORCH_REPO` is empty, run `eval "$(bash ~/git/site-orch/env.sh)"` from the repo root first.</rule>
 <rule id="hands-off">ONE turn, unattended. Before flagging blocked run `/validate-block <issue-url> "<reason>"` and obey it (true: add the `blocked` label, do NOT change the state, post the blocker, stop).</rule>
 <rule id="check-not-fix">Verify and report; do NOT edit. File change requests and route to Pending. NEVER route to Running.</rule>
 <rule id="binary-verdict">A finding is either a CHANGE REQUEST or you do not raise it.</rule>

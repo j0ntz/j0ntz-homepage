@@ -1,5 +1,5 @@
 {
-  "_doc": "site-orch per-site config. Lives at the site repo root; register its path with ~/git/site-orch/register.sh add. Board ids are written by new-project.sh; edit by hand only when moving boards.",
+  "_doc": "site-orch per-tenant config. Lives at the tenant repo root; register its path with ~/git/site-orch/register.sh add. Board ids are written by new-project.sh; edit by hand only when moving boards.",
   "slug": "j0ntz-homepage",
   "github": {
     "owner": "j0ntz",
@@ -26,7 +26,7 @@
     }
   },
   "verify": {
-    "_doc": "resolver = resolvers/<name>.sh in site-orch (vercel), or resolverCommand = a site script printing one live preview URL for <pr> <sha>.",
+    "_doc": "resolver = resolvers/<name>.sh in site-orch (vercel), or resolverCommand = a tenant script printing one live preview URL for <pr> <sha>.",
     "resolver": "vercel"
   },
   "land": {
