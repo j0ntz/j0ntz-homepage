@@ -1,0 +1,21 @@
+{
+  "_doc": "Copy and links for the one page. Every user-facing string on the page comes from here so the copy lint has one place to read and Jon has one place to edit.",
+  "name": "Jonathan Tzeng",
+  "line": "Builds the Edge crypto wallet in React Native, and the agent tooling that reviews and lands its pull requests.",
+  "links": [
+    { "label": "LinkedIn", "href": "https://www.linkedin.com/in/jonathan-tzeng-a892b451/" },
+    { "label": "GitHub", "href": "https://github.com/j0ntz" },
+    { "label": "Email", "href": "mailto:jnthntzng@gmail.com" }
+  ],
+  "cta": { "label": "See the work", "href": "#work" },
+  "graph": {
+    "ariaLabel": "Jon's public repos and projects, sized by commits in the last two years",
+    "commitsUnit": { "one": "commit", "other": "commits" },
+    "starsUnit": { "one": "star", "other": "stars" },
+    "sincePrefix": "since"
+  },
+  "sections": {
+    "work": { "id": "work", "title": "Selected work" },
+    "about": { "id": "about", "title": "About" }
+  }
+}

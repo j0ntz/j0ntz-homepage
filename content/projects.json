@@ -1,0 +1,52 @@
+{
+  "_doc": "Hand-maintained named projects that are not single repos. Each becomes one graph node; `links` are `owner/repo` ids of the public repos it groups (the project's commit count is the sum of Jon's commits across them, and each link is a full-weight edge). `url` is where a click goes. Edit here, then `npm run graph:data`.",
+  "projects": [
+    {
+      "id": "project:edge-wallet",
+      "label": "Edge wallet",
+      "url": "https://github.com/EdgeApp/edge-react-gui",
+      "language": "TypeScript",
+      "description": "The Edge self-custody wallet: React Native app, core, currency and exchange plugins, and the servers behind them.",
+      "links": [
+        "EdgeApp/edge-react-gui",
+        "EdgeApp/edge-core-js",
+        "EdgeApp/edge-currency-accountbased",
+        "EdgeApp/edge-currency-plugins",
+        "EdgeApp/edge-currency-monero",
+        "EdgeApp/edge-exchange-plugins",
+        "EdgeApp/edge-login-ui-rn",
+        "EdgeApp/edge-sync-client",
+        "EdgeApp/edge-reports-server",
+        "EdgeApp/edge-rates-server",
+        "EdgeApp/react-native-zcash",
+        "EdgeApp/react-native-zano",
+        "EdgeApp/react-native-piratechain",
+        "EdgeApp/zcash-native",
+        "EdgeApp/disklet"
+      ]
+    },
+    {
+      "id": "project:agent-orchestration",
+      "label": "Agent orchestration",
+      "url": "https://github.com/EdgeApp/edge-dev-agents",
+      "language": "Shell",
+      "description": "Asana tasks to pull requests without a human in the loop: a watcher spawns one Claude Code session per task, hooks enforce the workflow, a watchdog tends the sessions.",
+      "links": [
+        "EdgeApp/edge-dev-agents",
+        "EdgeApp/edge-conventions",
+        "j0ntz/cursor-autopilot",
+        "j0ntz/j0ntz-homepage"
+      ]
+    },
+    {
+      "id": "project:agent-evals",
+      "label": "Agent evals",
+      "url": "https://github.com/EdgeApp/edge-dev-agents#evals",
+      "language": "Shell",
+      "description": "Post-hoc grading of finished agent runs against explicit rubrics, every finding carrying a citation an auditor can open.",
+      "links": [
+        "EdgeApp/edge-dev-agents"
+      ]
+    }
+  ]
+}
